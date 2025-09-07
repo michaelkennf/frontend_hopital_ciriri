@@ -29,7 +29,7 @@ const EmployeesManagement = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/employees`);
+      const response = await axios.get(`/api/employees`);
       setEmployees(response.data);
     } catch (error) {
       console.error('Erreur lors de la récupération des employés:', error);
@@ -53,10 +53,10 @@ const EmployeesManagement = () => {
       };
 
       if (editingEmployee) {
-        await axios.put(`${import.meta.env.VITE_API_URL}/api/employees/${editingEmployee.id}`, employeeData);
+        await axios.put(`/api/employees/${editingEmployee.id}`, employeeData);
         setSuccess('Employé modifié avec succès !');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL}/api/employees`, employeeData);
+        await axios.post(`/api/employees`, employeeData);
         setSuccess('Employé enregistré avec succès !');
       }
 
@@ -90,7 +90,7 @@ const EmployeesManagement = () => {
   const handleDelete = async (id: number) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet employé ?')) {
       try {
-        await axios.delete(`${import.meta.env.VITE_API_URL}/api/employees/${id}`);
+        await axios.delete(`/api/employees/${id}`);
         setSuccess('Employé supprimé avec succès !');
         fetchEmployees();
         setTimeout(() => setSuccess(null), 3000);
