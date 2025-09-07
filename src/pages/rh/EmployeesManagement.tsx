@@ -48,8 +48,8 @@ const EmployeesManagement = () => {
     try {
       const employeeData = {
         ...formData,
-        salary: parseFloat(formData.salary),
-        dateOfBirth: new Date(formData.dateOfBirth).toISOString()
+        salary: parseFloat(formData.salary)
+        // dateOfBirth retiré car le modèle Employee n'a pas ce champ
       };
 
       if (editingEmployee) {
@@ -77,11 +77,11 @@ const EmployeesManagement = () => {
       lastName: employee.lastName,
       postNom: employee.postNom,
       address: employee.address,
-      dateOfBirth: employee.dateOfBirth.split('T')[0],
+      dateOfBirth: '', // Pas de date de naissance dans le modèle Employee
       maritalStatus: employee.maritalStatus,
-      salary: employee.salary.toString(),
+      salary: employee.salary?.toString() || '',
       function: employee.function,
-      contact: employee.contact,
+      contact: employee.phone, // Le backend stocke le contact dans 'phone'
       sexe: employee.sexe
     });
     setShowForm(true);
@@ -305,7 +305,7 @@ const EmployeesManagement = () => {
                     <td className='px-6 py-4'>
                       <div className='space-y-2'>
                         <div className='text-sm text-gray-900'>
-                          <strong>Contact:</strong> {employee.contact}
+                          <strong>Contact:</strong> {employee.phone}
                         </div>
                         <div className='text-sm text-gray-600'>
                           <strong>Adresse:</strong> {employee.address}
@@ -318,7 +318,7 @@ const EmployeesManagement = () => {
                           <strong>Fonction:</strong> {employee.function}
                         </div>
                         <div className='text-sm text-gray-600'>
-                          <strong>Salaire:</strong> ${employee.salary.toLocaleString()} USD
+                          <strong>Salaire:</strong> ${employee.salary?.toLocaleString() || '0'} USD
                         </div>
                       </div>
                     </td>
