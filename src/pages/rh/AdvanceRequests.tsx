@@ -33,6 +33,7 @@ const AdvanceRequests: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [comment, setComment] = useState<{ [id: number]: string }>({});
+  const [printedAuthorizations, setPrintedAuthorizations] = useState<Set<number>>(new Set());
 
   // Vérifier si l'utilisateur est PDG
   const isPDG = user?.role === 'PDG';
@@ -159,12 +160,12 @@ const AdvanceRequests: React.FC = () => {
     // Titre
     doc.setFontSize(18);
     doc.setTextColor(21,128,61);
-    doc.text('Autorisation d’Avance sur Salaire', 20, 65);
+    doc.text('Autorisation d'Avance sur Salaire', 20, 65);
     doc.setFontSize(12);
     doc.setTextColor(0,0,0);
     // Contenu principal
     doc.text(`Employé : ${r.employee ? `${r.employee.firstName || ''} ${r.employee.lastName || ''}` : 'Employé non trouvé'}`, 20, 80);
-    doc.text(`Montant : ${r.amount} €`, 20, 90);
+    doc.text(`Montant : ${r.amount} $`, 20, 90);
     doc.text(`Raison : ${r.reason}`, 20, 100);
     doc.text(`Statut : ${r.status === 'approved' ? 'Validé' : r.status}`, 20, 110);
     if (r.pdgComment) doc.text(`Commentaire PDG : ${r.pdgComment}`, 20, 120);
@@ -177,6 +178,9 @@ const AdvanceRequests: React.FC = () => {
     doc.text('Tél : (+243) 975 822 376, 843 066 779', 105, 285, { align: 'center' });
     doc.text('Email : polycliniquedesapotres1121@gmail.com', 105, 290, { align: 'center' });
     doc.save(`autorisation_avance_${r.id}.pdf`);
+    
+    // Marquer comme imprimé
+    setPrintedAuthorizations(prev => new Set([...prev, r.id]));
   };
 
   return (
@@ -216,7 +220,7 @@ const AdvanceRequests: React.FC = () => {
                   <td className="px-4 py-2">
                     {r.employee ? `${r.employee.firstName || ''} ${r.employee.lastName || ''}` : 'Employé non trouvé'}
                   </td>
-                  <td className="px-4 py-2">{r.amount} €</td>
+                  <td className="px-4 py-2">{r.amount} $</td>
                   <td className="px-4 py-2">{r.reason}</td>
                   <td className="px-4 py-2">{r.status}</td>
                   <td className="px-4 py-2">
@@ -256,10 +260,13 @@ const AdvanceRequests: React.FC = () => {
                     {r.status === 'pending' && !isPDG && (
                       <span className="text-gray-500 text-sm">En attente d'approbation PDG</span>
                     )}
-                    {r.status === 'approved' && (isRH || isPDG) && (
+                    {r.status === 'approved' && (isRH || isPDG) && !printedAuthorizations.has(r.id) && (
                       <button className="btn-secondary" onClick={() => handlePrintAuthorization(r)}>
                         Imprimer autorisation
                       </button>
+                    )}
+                    {r.status === 'approved' && printedAuthorizations.has(r.id) && (
+                      <span className="text-green-600 text-sm font-medium">✓ Autorisation imprimée</span>
                     )}
                     {r.status === 'rejected' && (
                       <span className="text-red-500 text-sm">Demande rejetée</span>
@@ -301,7 +308,7 @@ const AdvanceRequests: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Montant (€)</label>
+                <label className="block text-sm font-medium text-gray-700">Montant ($)</label>
                 <input
                   type="number"
                   name="amount"
