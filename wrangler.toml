@@ -1,0 +1,22 @@
+# Configuration Cloudflare Pages pour le frontend
+name = "hopital-frontend"
+compatibility_date = "2024-01-01"
+
+[env.production]
+  # URL du backend déployé sur Fly.io
+  VITE_API_URL = "https://hopital-backend.fly.dev"
+
+[env.development]
+  # URL du backend local pour le développement
+  VITE_API_URL = "http://localhost:5000"
+
+# Configuration pour le build
+[build]
+  command = "npm run build"
+  cwd = "."
+  watch_dir = "src"
+
+# Configuration des routes
+[[routes]]
+  pattern = "/*"
+  custom_domain = false
