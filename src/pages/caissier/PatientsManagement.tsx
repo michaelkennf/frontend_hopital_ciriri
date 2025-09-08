@@ -60,7 +60,7 @@ const PatientsManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/patients?service=caissier');
+      const res = await axios.get('/api/patients');
       setPatients(res.data.patients || []);
       // Pour la génération locale du numéro de dossier (affichage uniquement)
       if (res.data.patients && res.data.patients.length > 0) {
