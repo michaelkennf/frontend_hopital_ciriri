@@ -35,66 +35,18 @@ const CreditRequests: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [comment, setComment] = useState<{ [id: number]: string }>({});
-  
-  // Charger les impressions depuis localStorage
-  const [printedRequests, setPrintedRequests] = useState<Set<number>>(() => {
-    const saved = localStorage.getItem('printedCreditRequests');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
+  const [printedAuthorizations, setPrintedAuthorizations] = useState<Set<number>>(new Set());
 
   // Vérifier si l'utilisateur est PDG
   const isPDG = user?.role === 'PDG';
   // Vérifier si l'utilisateur est RH
   const isRH = user?.role === 'RH';
 
-  // Sauvegarder les impressions dans localStorage
-  const updatePrintedRequests = (newSet: Set<number>) => {
-    setPrintedRequests(newSet);
-    localStorage.setItem('printedCreditRequests', JSON.stringify([...newSet]));
-  };
-
-  // Nettoyer les anciennes impressions (plus de 30 jours)
-  const cleanupOldPrintedRequests = () => {
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    const newSet = new Set(printedRequests);
-    let hasChanges = false;
-    
-    // Supprimer les IDs qui correspondent à des demandes supprimées ou anciennes
-    requests.forEach(request => {
-      const requestDate = new Date(request.createdAt).getTime();
-      if (requestDate < thirtyDaysAgo && newSet.has(request.id)) {
-        newSet.delete(request.id);
-        hasChanges = true;
-      }
-    });
-    
-    if (hasChanges) {
-      updatePrintedRequests(newSet);
-    }
-  };
 
   useEffect(() => {
     fetchRequests();
     fetchEmployees();
   }, []);
-
-  // Nettoyer les anciennes impressions après le chargement des demandes
-  useEffect(() => {
-    if (requests.length > 0) {
-      cleanupOldPrintedRequests();
-    }
-  }, [requests]);
-
-  // Nettoyer les messages après 5 secondes
-  useEffect(() => {
-    if (success || error) {
-      const timer = setTimeout(() => {
-        setSuccess(null);
-        setError(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [success, error]);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -259,11 +211,8 @@ const CreditRequests: React.FC = () => {
       const fileName = `autorisation_credit_${r.id}.pdf`;
       doc.save(fileName);
       
-      // Masquer le bouton après impression
-      updatePrintedRequests(new Set([...printedRequests, r.id]));
-      
-      // Afficher un message de succès
-      setSuccess('Autorisation imprimée avec succès !');
+      // Marquer comme imprimé
+      setPrintedAuthorizations(prev => new Set([...prev, r.id]));
       
     } catch (error) {
       console.error('Erreur lors de l\'impression:', error);
@@ -271,12 +220,6 @@ const CreditRequests: React.FC = () => {
     }
   };
 
-  const handleResetPrintStatus = (requestId: number) => {
-    const newSet = new Set(printedRequests);
-    newSet.delete(requestId);
-    updatePrintedRequests(newSet);
-    setSuccess('Bouton d\'impression réactivé');
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -479,7 +422,7 @@ const CreditRequests: React.FC = () => {
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
                       {getStatusText(request.status)}
                     </span>
-                    {request.status === 'approved' && isRH && !printedRequests.has(request.id) && (
+                    {request.status === 'approved' && isRH && !printedAuthorizations.has(request.id) && (
                       <button
                         onClick={() => handlePrintAuthorization(request)}
                         className="btn-secondary text-sm"
@@ -487,14 +430,8 @@ const CreditRequests: React.FC = () => {
                         Imprimer autorisation
                       </button>
                     )}
-                    {request.status === 'approved' && isRH && printedRequests.has(request.id) && (
-                      <button
-                        onClick={() => handleResetPrintStatus(request.id)}
-                        className="btn-secondary text-sm opacity-50"
-                        title="Réactiver l'impression"
-                      >
-                        Réimprimer
-                      </button>
+                    {request.status === 'approved' && isRH && printedAuthorizations.has(request.id) && (
+                      <span className="text-green-600 text-sm font-medium">✓ Autorisation imprimée</span>
                     )}
                   </div>
                 </div>

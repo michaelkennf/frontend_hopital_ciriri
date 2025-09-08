@@ -36,6 +36,7 @@ const LeaveRequests: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [comment, setComment] = useState<{ [id: number]: string }>({});
+  const [printedAuthorizations, setPrintedAuthorizations] = useState<Set<number>>(new Set());
 
   // Vérifier si l'utilisateur est PDG
   const isPDG = user?.role === 'PDG';
@@ -175,6 +176,9 @@ const LeaveRequests: React.FC = () => {
     doc.text('Tél : (+243) 975 822 376, 843 066 779', 105, 285, { align: 'center' });
     doc.text('Email : polycliniquedesapotres1121@gmail.com', 105, 290, { align: 'center' });
     doc.save(`autorisation_conge_${r.id}.pdf`);
+    
+    // Marquer comme imprimé
+    setPrintedAuthorizations(prev => new Set([...prev, r.id]));
   };
 
   return (
@@ -252,12 +256,15 @@ const LeaveRequests: React.FC = () => {
                       </>
                     )}
                     {r.status === 'pending' && !isPDG && (
-                      <span className="text-gray-500 text-sm">En attente d'approbation PDG</span>
+                      <span className="text-gray-500 text-sm">En attente d\'approbation PDG</span>
                     )}
-                    {r.status === 'approved' && (isRH || isPDG) && (
+                    {r.status === 'approved' && (isRH || isPDG) && !printedAuthorizations.has(r.id) && (
                       <button className="btn-secondary" onClick={() => handlePrintAuthorization(r)}>
                         Imprimer autorisation
                       </button>
+                    )}
+                    {r.status === 'approved' && printedAuthorizations.has(r.id) && (
+                      <span className="text-green-600 text-sm font-medium">✓ Autorisation imprimée</span>
                     )}
                     {r.status === 'rejected' && (
                       <span className="text-red-500 text-sm">Demande rejetée</span>
