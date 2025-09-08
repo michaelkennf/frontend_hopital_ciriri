@@ -14,6 +14,7 @@ const EmployeesManagement = () => {
     lastName: '',
     postNom: '',
     address: '',
+    dateOfBirth: '',
     maritalStatus: '',
     salary: '',
     function: '',
@@ -47,8 +48,8 @@ const EmployeesManagement = () => {
     try {
       const employeeData = {
         ...formData,
-        salary: parseFloat(formData.salary)
-        // dateOfBirth retiré car le modèle Employee n'a pas ce champ
+        salary: parseFloat(formData.salary),
+        dateOfBirth: formData.dateOfBirth || null
       };
 
       if (editingEmployee) {
@@ -59,7 +60,7 @@ const EmployeesManagement = () => {
         setSuccess('Employé enregistré avec succès !');
       }
 
-      setFormData({firstName: '', lastName: '', postNom: '', address: '', maritalStatus: '', salary: '', function: '', contact: '', sexe: ''});
+      setFormData({firstName: '', lastName: '', postNom: '', address: '', dateOfBirth: '', maritalStatus: '', salary: '', function: '', contact: '', sexe: ''});
       setEditingEmployee(null);
       setShowForm(false);
       fetchEmployees();
@@ -76,6 +77,7 @@ const EmployeesManagement = () => {
       lastName: employee.lastName,
       postNom: employee.postNom,
       address: employee.address,
+      dateOfBirth: employee.dateOfBirth ? new Date(employee.dateOfBirth).toISOString().split('T')[0] : '',
       maritalStatus: employee.maritalStatus,
       salary: employee.salary?.toString() || '',
       function: employee.function,
@@ -99,8 +101,23 @@ const EmployeesManagement = () => {
   };
 
   const resetForm = () => {
-    setFormData({firstName: '', lastName: '', postNom: '', address: '', maritalStatus: '', salary: '', function: '', contact: '', sexe: ''});
+    setFormData({firstName: '', lastName: '', postNom: '', address: '', dateOfBirth: '', maritalStatus: '', salary: '', function: '', contact: '', sexe: ''});
     setEditingEmployee(null);
+  };
+
+  // Fonction pour calculer l'âge
+  const calculateAge = (dateOfBirth: string | Date) => {
+    if (!dateOfBirth) return null;
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
   };
 
   return (
@@ -167,6 +184,16 @@ const EmployeesManagement = () => {
                   type='text'
                   name='address'
                   value={formData.address}
+                  onChange={handleInputChange}
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>Date de naissance</label>
+                <input
+                  type='date'
+                  name='dateOfBirth'
+                  value={formData.dateOfBirth}
                   onChange={handleInputChange}
                   className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
@@ -281,6 +308,12 @@ const EmployeesManagement = () => {
                         </div>
                         <div className='text-sm text-gray-600'>
                           <strong>Sexe:</strong> {employee.sexe === 'M' ? 'Masculin' : 'Féminin'}
+                        </div>
+                        <div className='text-sm text-gray-600'>
+                          <strong>Date de naissance:</strong> {employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString('fr-FR') : 'Non renseignée'}
+                        </div>
+                        <div className='text-sm text-gray-600'>
+                          <strong>Âge:</strong> {employee.dateOfBirth ? `${calculateAge(employee.dateOfBirth)} ans` : 'Non calculable'}
                         </div>
                         <div className='text-sm text-gray-600'>
                           <strong>État civil:</strong> {employee.maritalStatus}
