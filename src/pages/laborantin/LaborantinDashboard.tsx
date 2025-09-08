@@ -204,12 +204,19 @@ function PatientsExamens({
   searchTerm, 
   addingExam, 
   newExamResult,
+  editingExam,
+  editResult,
   onSearchTermChange,
   onSelectPatient,
   onMarkAsCompleted,
   onNewExamResultChange,
   onRefreshDossier,
-  onRefreshPatients
+  onRefreshPatients,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onEditResultChange,
+  canModifyExam
 }: {
   patients: Patient[];
   selectedPatient: Patient | null;
@@ -219,12 +226,19 @@ function PatientsExamens({
   searchTerm: string;
   addingExam: boolean;
   newExamResult: string;
+  editingExam: number | null;
+  editResult: string;
   onSearchTermChange: (term: string) => void;
   onSelectPatient: (patient: Patient) => void;
   onMarkAsCompleted: (exam: Exam) => void;
   onNewExamResultChange: (result: string) => void;
   onRefreshDossier: () => void;
   onRefreshPatients: () => void;
+  onStartEdit: (exam: any) => void;
+  onCancelEdit: () => void;
+  onSaveEdit: (exam: any) => void;
+  onEditResultChange: (result: string) => void;
+  canModifyExam: (exam: any) => boolean;
 }) {
   // État pour forcer la mise à jour de l'interface en temps réel
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -527,10 +541,47 @@ function PatientsExamens({
                                 </svg>
                                 <strong className="text-blue-800 text-sm">Résultat :</strong>
                               </div>
+                              {/* Bouton de modification si dans les 5 minutes */}
+                              {canModifyExam(exam) && (
+                                <button
+                                  onClick={() => onStartEdit(exam)}
+                                  className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
+                                  title="Modifier le résultat (dans les 5 minutes après soumission)"
+                                >
+                                  ✏️ Modifier
+                                </button>
+                              )}
                             </div>
                             
-                            {/* Affichage du résultat en lecture seule */}
-                            <div className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{exam.results}</div>
+                            {/* Affichage du résultat - mode édition ou lecture */}
+                            {editingExam === exam.id ? (
+                              <div className="mt-2">
+                                <textarea
+                                  className={`${styles.inputField} text-sm`}
+                                  rows={3}
+                                  value={editResult}
+                                  onChange={(e) => onEditResultChange(e.target.value)}
+                                  placeholder="Modifier le résultat..."
+                                />
+                                <div className="flex gap-2 mt-2">
+                                  <button
+                                    onClick={() => onSaveEdit(exam)}
+                                    disabled={addingExam || !editResult.trim()}
+                                    className={`${styles.btnXs} bg-green-600 hover:bg-green-700`}
+                                  >
+                                    {addingExam ? 'Sauvegarde...' : 'Sauvegarder'}
+                                  </button>
+                                  <button
+                                    onClick={onCancelEdit}
+                                    className={`${styles.btnXs} bg-gray-600 hover:bg-gray-700`}
+                                  >
+                                    Annuler
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{exam.results}</div>
+                            )}
                             
                             {/* Informations sur l'examen - version simplifiée */}
                             <div className="text-xs text-gray-500 mt-2 ml-6">
@@ -538,6 +589,9 @@ function PatientsExamens({
                                 <div className="text-gray-500">
                                   Soumis le {new Date(exam.updatedAt).toLocaleDateString('fr-FR')} 
                                   à {new Date(exam.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                  {canModifyExam(exam) && (
+                                    <span className="text-green-600 ml-2">• Modifiable</span>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -580,6 +634,8 @@ const LaborantinDashboard: React.FC = () => {
   // États pour la gestion des examens
   const [addingExam, setAddingExam] = useState(false);
   const [newExamResult, setNewExamResult] = useState('');
+  const [editingExam, setEditingExam] = useState<number | null>(null);
+  const [editResult, setEditResult] = useState('');
 
   // Charger la liste des patients au montage
   useEffect(() => {
@@ -779,6 +835,65 @@ const LaborantinDashboard: React.FC = () => {
     }
   };
 
+  // Fonction pour vérifier si un examen peut encore être modifié (dans les 5 minutes)
+  const canModifyExam = (exam: any): boolean => {
+    if (!exam.updatedAt || exam.status !== 'completed') return false;
+    
+    const submissionTime = new Date(exam.updatedAt);
+    const now = new Date();
+    const timeDiff = now.getTime() - submissionTime.getTime();
+    const minutesDiff = timeDiff / (1000 * 60);
+    
+    return minutesDiff <= 5;
+  };
+
+  // Fonction pour démarrer la modification d'un examen
+  const handleStartEdit = (exam: any) => {
+    setEditingExam(exam.id);
+    setEditResult(exam.results || '');
+  };
+
+  // Fonction pour annuler la modification
+  const handleCancelEdit = () => {
+    setEditingExam(null);
+    setEditResult('');
+  };
+
+  // Fonction pour sauvegarder la modification
+  const handleSaveEdit = async (exam: any) => {
+    if (!editResult.trim()) {
+      setError('Veuillez saisir un résultat avant de sauvegarder.');
+      return;
+    }
+
+    setAddingExam(true);
+    setError(null);
+    
+    try {
+      const response = await axios.patch(`/api/exams/${exam.id}/results`, {
+        results: editResult.trim()
+      });
+      
+      console.log(`✅ Résultat de l'examen ${exam.examType?.name || 'Examen'} modifié`);
+      
+      // Rafraîchir le dossier
+      if (selectedPatient) {
+        const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+        setDossier(dossierRes.data);
+      }
+      
+      // Réinitialiser l'édition
+      setEditingExam(null);
+      setEditResult('');
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la modification du résultat:', error);
+      setError(error.response?.data?.error || 'Erreur lors de la modification du résultat');
+    } finally {
+      setAddingExam(false);
+    }
+  };
+
   // Fonction pour marquer un examen comme réalisé
   const handleMarkAsCompleted = async (exam: Exam) => {
     if (!newExamResult.trim()) {
@@ -864,12 +979,19 @@ const LaborantinDashboard: React.FC = () => {
               searchTerm={searchTerm}
               addingExam={addingExam}
               newExamResult={newExamResult}
+              editingExam={editingExam}
+              editResult={editResult}
               onSearchTermChange={setSearchTerm}
               onSelectPatient={handleSelectPatient}
               onMarkAsCompleted={handleMarkAsCompleted}
               onNewExamResultChange={setNewExamResult}
               onRefreshDossier={handleRefreshDossier}
               onRefreshPatients={handleRefreshPatients}
+              onStartEdit={handleStartEdit}
+              onCancelEdit={handleCancelEdit}
+              onSaveEdit={handleSaveEdit}
+              onEditResultChange={setEditResult}
+              canModifyExam={canModifyExam}
             />
           } />
         </Routes>
