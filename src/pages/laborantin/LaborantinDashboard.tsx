@@ -644,11 +644,11 @@ const LaborantinDashboard: React.FC = () => {
     
     const loadPatients = async () => {
       try {
-        const response = await axios.get('/api/exams/scheduled');
-        const scheduledExams = response.data.exams || [];
+        const response = await axios.get('/api/exams/laborantin');
+        const allExams = response.data.exams || [];
         
-        // Créer une liste unique de patients avec des examens programmés
-        const patientsWithExams = scheduledExams.map((exam: any) => {
+        // Créer une liste unique de patients avec des examens (programmés ET réalisés)
+        const patientsWithExams = allExams.map((exam: any) => {
           const patient = exam.patient;
           let service = 'Patient visiteur';
           
@@ -675,20 +675,9 @@ const LaborantinDashboard: React.FC = () => {
           patient?.id && index === self.findIndex((p: any) => p?.id === patient?.id)
         );
         
-        // Ajouter les nouveaux patients à la liste existante au lieu de les remplacer
-        setPatients(prevPatients => {
-          const existingPatientIds = new Set(prevPatients.map((p: Patient) => p.id));
-          const newPatients = uniquePatients.filter((p: any) => !existingPatientIds.has(p.id));
-          
-          if (newPatients.length > 0) {
-            console.log(`✅ ${newPatients.length} nouveaux patients ajoutés à la liste existante`);
-          }
-          
-          // Retourner la liste complète : anciens + nouveaux patients
-          const updatedList = [...prevPatients, ...newPatients];
-          console.log(`📊 Total patients dans la liste: ${updatedList.length}`);
-          return updatedList;
-        });
+        // Remplacer complètement la liste avec tous les patients (programmés ET réalisés)
+        setPatients(uniquePatients);
+        console.log(`📊 ${uniquePatients.length} patients chargés (programmés ET réalisés)`);
         
         // Si un patient est déjà sélectionné, maintenir son dossier
         if (selectedPatient && !uniquePatients.find((p: Patient) => p.id === selectedPatient.id)) {
@@ -717,11 +706,11 @@ const LaborantinDashboard: React.FC = () => {
     setError(null);
     
     try {
-      const response = await axios.get('/api/exams/scheduled');
-      const scheduledExams = response.data.exams || [];
+      const response = await axios.get('/api/exams/laborantin');
+      const allExams = response.data.exams || [];
       
-      // Créer une liste unique de patients avec des examens programmés
-      const patientsWithExams = scheduledExams.map((exam: any) => {
+      // Créer une liste unique de patients avec des examens (programmés ET réalisés)
+      const patientsWithExams = allExams.map((exam: any) => {
         const patient = exam.patient;
         let service = 'Patient visiteur';
         
@@ -748,20 +737,9 @@ const LaborantinDashboard: React.FC = () => {
         patient?.id && index === self.findIndex((p: any) => p?.id === patient?.id)
       );
       
-      // Mettre à jour la liste en préservant tous les patients existants
-      setPatients(prevPatients => {
-        const existingPatientIds = new Set(prevPatients.map((p: Patient) => p.id));
-        const newPatients = uniquePatients.filter((p: any) => !existingPatientIds.has(p.id));
-        
-        if (newPatients.length > 0) {
-          console.log(`🔄 ${newPatients.length} nouveaux patients ajoutés lors du rafraîchissement`);
-        }
-        
-        // Retourner la liste complète : anciens + nouveaux patients
-        const updatedList = [...prevPatients, ...newPatients];
-        console.log(`📊 Total patients après rafraîchissement: ${updatedList.length}`);
-        return updatedList;
-      });
+      // Remplacer complètement la liste avec tous les patients (programmés ET réalisés)
+      setPatients(uniquePatients);
+      console.log(`📊 ${uniquePatients.length} patients chargés lors du rafraîchissement (programmés ET réalisés)`);
       
     } catch (error: any) {
       console.error('❌ Erreur lors du rafraîchissement des patients:', error);
@@ -876,6 +854,9 @@ const LaborantinDashboard: React.FC = () => {
       
       console.log(`✅ Résultat de l'examen ${exam.examType?.name || 'Examen'} modifié`);
       
+      // Rafraîchir la liste des patients
+      await handleRefreshPatients();
+      
       // Rafraîchir le dossier
       if (selectedPatient) {
         const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
@@ -920,7 +901,10 @@ const LaborantinDashboard: React.FC = () => {
       console.log(`✅ Examen ${exam.examType?.name || 'Examen'} marqué comme réalisé`);
       console.log('📡 Réponse API:', response.data);
       
-      // Rafraîchir le dossier immédiatement pour maintenir la visibilité
+      // Rafraîchir la liste des patients pour maintenir la visibilité
+      await handleRefreshPatients();
+      
+      // Rafraîchir le dossier du patient sélectionné
       if (selectedPatient) {
         try {
           const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
@@ -938,14 +922,6 @@ const LaborantinDashboard: React.FC = () => {
           }
           
           setDossier(dossierRes.data);
-          
-          // Vérifier s'il reste des examens programmés
-          const remainingScheduled = dossierRes.data.exams?.filter((e: any) => e.status === 'scheduled');
-          if (remainingScheduled && remainingScheduled.length > 0) {
-            console.log(`📋 Il reste ${remainingScheduled.length} examen(s) programmé(s)`);
-          } else {
-            console.log('📋 Tous les examens sont réalisés');
-          }
           
         } catch (dossierError: any) {
           console.error('⚠️ Erreur lors du rafraîchissement du dossier:', dossierError);
