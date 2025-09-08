@@ -160,7 +160,7 @@ const AdvanceRequests: React.FC = () => {
     // Titre
     doc.setFontSize(18);
     doc.setTextColor(21,128,61);
-    doc.text('Autorisation d'Avance sur Salaire', 20, 65);
+    doc.text('Autorisation d\'Avance sur Salaire', 20, 65);
     doc.setFontSize(12);
     doc.setTextColor(0,0,0);
     // Contenu principal
@@ -258,7 +258,7 @@ const AdvanceRequests: React.FC = () => {
                       </>
                     )}
                     {r.status === 'pending' && !isPDG && (
-                      <span className="text-gray-500 text-sm">En attente d'approbation PDG</span>
+                      <span className="text-gray-500 text-sm">En attente d\'approbation PDG</span>
                     )}
                     {r.status === 'approved' && (isRH || isPDG) && !printedAuthorizations.has(r.id) && (
                       <button className="btn-secondary" onClick={() => handlePrintAuthorization(r)}>
