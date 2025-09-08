@@ -870,7 +870,7 @@ const LaborantinDashboard: React.FC = () => {
     setError(null);
     
     try {
-      const response = await axios.patch(`/api/exams/${exam.id}/results`, {
+      const response = await axios.patch(`/api/exams/${exam.id}/edit-result`, {
         results: editResult.trim()
       });
       
