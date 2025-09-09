@@ -1,6 +1,14 @@
 # Configuration Cloudflare Pages pour le frontend
-name = "hopital-frontend"
+name = "polycliniquedesapotres"
 compatibility_date = "2024-01-01"
 
 # Configuration pour Cloudflare Pages
 pages_build_output_dir = "./dist"
+
+[env.production]
+  # URL du backend déployé sur Render
+  VITE_API_URL = "https://polycliniquedesapotres-backend.onrender.com"
+
+[env.preview]
+  # URL du backend local pour le développement
+  VITE_API_URL = "http://localhost:5000"
