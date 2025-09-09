@@ -33,7 +33,7 @@ type AuthStore = AuthState & AuthActions;
 
 // Configuration axios
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? 'https://backend-hopital-8098.onrender.com' : 'http://localhost:5000');
+  (import.meta.env.PROD ? 'https://polycliniquedesapotres-backend.onrender.com' : 'http://localhost:5000');
 
 console.log('[AUTH STORE] API Base URL:', API_BASE_URL);
 console.log('[AUTH STORE] Environment:', import.meta.env.MODE);
