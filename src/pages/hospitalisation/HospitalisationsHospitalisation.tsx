@@ -4,7 +4,7 @@ import axios from 'axios';
 // Fonction helper pour ajouter l'authentification aux appels axios
 const authenticatedAxios = {
   get: (url: string) => {
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     return axios.get(url, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -12,7 +12,7 @@ const authenticatedAxios = {
     });
   },
   post: (url: string, data: any) => {
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     return axios.post(url, data, {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -20,7 +20,7 @@ const authenticatedAxios = {
     });
   },
   patch: (url: string, data: any) => {
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     return axios.patch(url, data, {
       headers: {
         'Authorization': `Bearer ${token}`

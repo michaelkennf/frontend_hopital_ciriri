@@ -9,7 +9,7 @@ const api = axios.create({
 // Intercepteur pour ajouter automatiquement le token d'authentification
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     console.log('🔐 Intercepteur de requête - Token trouvé:', token ? 'OUI' : 'NON');
     console.log('🔐 URL de la requête:', config.url);
     if (token) {
@@ -37,7 +37,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.error('🔐 Erreur d\'authentification détectée');
       console.error('🔐 Headers de la requête:', error.config?.headers);
-      console.error('🔐 Token dans localStorage:', localStorage.getItem('auth-token') ? 'PRÉSENT' : 'ABSENT');
+      console.error('🔐 Token dans localStorage:', localStorage.getItem('token') ? 'PRÉSENT' : 'ABSENT');
     }
     return Promise.reject(error);
   }
@@ -121,7 +121,7 @@ const SupplyRequests: React.FC = () => {
 
   useEffect(() => {
     // Vérifier l'authentification
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     if (!token) {
       setError('Vous devez être connecté pour accéder à cette page. Veuillez vous connecter.');
       return;
@@ -338,7 +338,7 @@ const SupplyRequests: React.FC = () => {
     setSuccess(null);
 
     // Vérification manuelle de l'authentification avant soumission
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     console.log('🔐 Vérification manuelle du token dans handleSubmit:');
     console.log('🔐 Token présent:', token ? 'OUI' : 'NON');
     console.log('🔐 Longueur du token:', token?.length);

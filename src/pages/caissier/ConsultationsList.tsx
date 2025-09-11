@@ -91,7 +91,7 @@ const ConsultationsList: React.FC = () => {
     try {
       console.log('🔍 fetchFacturedConsultations: Début de la récupération...');
       const res = await axios.get('/api/invoices', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('auth-token')}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       console.log('📊 fetchFacturedConsultations: Réponse API:', res.data);
       
@@ -229,7 +229,7 @@ const ConsultationsList: React.FC = () => {
       setTimeout(async () => {
         try {
           const res = await axios.get('/api/invoices', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('auth-token')}` }
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
           });
           const consultationsIds: number[] = [];
           for (const invoice of res.data.invoices || []) {

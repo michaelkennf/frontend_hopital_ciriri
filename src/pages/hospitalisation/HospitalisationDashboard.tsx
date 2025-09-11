@@ -15,7 +15,7 @@ import axios from 'axios';
 // Fonction helper pour ajouter l'authentification aux appels axios
 const authenticatedAxios = {
   get: (url: string) => {
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     return axios.get(url, {
       headers: {
         'Authorization': `Bearer ${token}`

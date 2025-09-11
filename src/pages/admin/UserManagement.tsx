@@ -50,7 +50,7 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('Token envoyé:', localStorage.getItem('auth-token'));
+      console.log('Token envoyé:', localStorage.getItem('token'));
       const response = await axios.get('/api/users');
       setUsers(response.data.users || []);
     } catch (err: any) {

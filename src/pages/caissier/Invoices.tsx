@@ -65,7 +65,7 @@ const Invoices: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('auth-token');
+      const token = localStorage.getItem('token');
       console.log('[INVOICES] Token présent:', !!token);
       console.log('[INVOICES] URL de base:', axios.defaults.baseURL);
       
@@ -416,7 +416,7 @@ const Invoices: React.FC = () => {
     try {
       await axios.patch(`/api/invoices/${invoice.id}/print`);
       // Rafraîchir la liste
-      const token = localStorage.getItem('auth-token');
+      const token = localStorage.getItem('token');
       let res;
       if (token) {
         res = await fetch('/api/invoices', { headers: { Authorization: `Bearer ${token}` } });
