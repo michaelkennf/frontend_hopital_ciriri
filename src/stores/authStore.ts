@@ -43,7 +43,7 @@ axios.defaults.baseURL = API_BASE_URL;
 // Intercepteur pour ajouter le token aux requêtes
 axios.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth-token');
+    const token = localStorage.getItem('token');
     console.log('[AXIOS INTERCEPTOR] Token utilisé:', token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -62,7 +62,7 @@ axios.interceptors.response.use(
     // Ne supprimer le token que pour les erreurs d'authentification spécifiques
     // Pas pour toutes les erreurs 401
     if (error.response?.status === 401 && error.response?.data?.error === 'Token invalide') {
-      localStorage.removeItem('auth-token');
+      localStorage.removeItem('token');
     }
     return Promise.reject(error);
   }
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthStore>()(
           const { token, user } = response.data;
           
           // Sauvegarder le token
-          localStorage.setItem('auth-token', token);
+          localStorage.setItem('token', token);
           
           // Mettre à jour l'état
           set({
@@ -135,7 +135,7 @@ export const useAuthStore = create<AuthStore>()(
           console.error('Erreur lors de la déconnexion:', error);
         } finally {
           // Nettoyer l'état local
-          localStorage.removeItem('auth-token');
+          localStorage.removeItem('token');
           set({
             user: null,
             token: null,
@@ -148,7 +148,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       checkAuth: async () => {
-        const token = localStorage.getItem('auth-token');
+        const token = localStorage.getItem('token');
         
         if (!token) {
           console.log('[AUTH STORE] Aucun token trouvé');
@@ -186,7 +186,7 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error: any) {
           console.log('[AUTH STORE] Token invalide, nettoyage...', error.response?.status);
           // Token invalide, nettoyer l'état
-          localStorage.removeItem('auth-token');
+          localStorage.removeItem('token');
           set({
             user: null,
             token: null,
