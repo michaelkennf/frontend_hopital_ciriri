@@ -171,6 +171,7 @@ export const useAuthStore = create<AuthStore>()(
         console.log('[AUTH STORE] Vérification du token...');
         set({ isLoading: true });
         
+        
         try {
           const response = await axios.get('/api/auth/verify');
           const { user } = response.data;
