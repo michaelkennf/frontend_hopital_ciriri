@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../../utils/axiosConfig';
 
 function generateFolderNumber(currentYear: number, lastNumber: number) {
   return `${currentYear}-${String(lastNumber + 1).padStart(3, '0')}`;
@@ -60,7 +60,7 @@ const PatientsManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/patients');
+      const res = await apiClient.get('/api/patients');
       setPatients(res.data.patients || []);
       // Pour la génération locale du numéro de dossier (affichage uniquement)
       if (res.data.patients && res.data.patients.length > 0) {
@@ -108,7 +108,7 @@ const PatientsManagement: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const res = await axios.post('/api/patients', {
+      const res = await apiClient.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
         sexe: form.sexe,
