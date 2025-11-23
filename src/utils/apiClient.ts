@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Configuration de base
 const createApiClient = () => {
-  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4007/api';
   console.log('[API CLIENT] Base URL:', baseURL);
   console.log('[API CLIENT] Environment:', import.meta.env.MODE);
   

@@ -4,7 +4,7 @@ import axios from 'axios';
 // Configuration de l'API avec gestion des environnements
 const getApiConfig = () => {
   const baseURL = import.meta.env.VITE_API_URL || 
-    (import.meta.env.PROD ? 'https://polycliniquedesapotres-backend.onrender.com' : 'http://localhost:5000');
+    (import.meta.env.PROD ? 'https://api.polyclinique.fikiri.org/api' : 'http://localhost:4007');
   
   return {
     baseURL,

@@ -1,14 +1,14 @@
 # Configuration Cloudflare Pages pour le frontend
-name = "polycliniquedesapotres"
+name = "polyclinique"
 compatibility_date = "2024-01-01"
 
 # Configuration pour Cloudflare Pages
 pages_build_output_dir = "./dist"
 
 [env.production]
-  # URL du backend déployé sur Render
-  VITE_API_URL = "https://polycliniquedesapotres-backend.onrender.com"
+  # URL du backend via Caddy
+  VITE_API_URL = "https://api.polyclinique.fikiri.org/api"
 
 [env.preview]
   # URL du backend local pour le développement
-  VITE_API_URL = "http://localhost:5000"
+  VITE_API_URL = "http://localhost:4007/api"
