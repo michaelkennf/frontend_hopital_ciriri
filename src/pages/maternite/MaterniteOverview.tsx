@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface MaternityStats {
   total: number;
@@ -24,11 +24,11 @@ const MaterniteOverview: React.FC = () => {
     const fetchStats = async () => {
       try {
         // Récupérer les patients maternité
-        const patientsRes = await axios.get('/api/patients?service=maternite');
+        const patientsRes = await apiClient.get('/api/patients?service=maternite');
         const patients = patientsRes.data.patients || [];
 
         // Récupérer les hospitalisations maternité avec protection complète
-        const hospRes = await axios.get('/api/hospitalizations');
+        const hospRes = await apiClient.get('/api/hospitalizations');
         const hospitalizations = hospRes.data.hospitalizations.filter((h: any) => {
           try {
             // Vérifier si roomType existe et a une propriété name
@@ -42,7 +42,7 @@ const MaterniteOverview: React.FC = () => {
         });
 
         // Récupérer l'historique maternité
-        const historyRes = await axios.get('/api/maternity-history');
+        const historyRes = await apiClient.get('/api/maternity-history');
         const history = historyRes.data.histories || [];
 
         // Calculer les statistiques

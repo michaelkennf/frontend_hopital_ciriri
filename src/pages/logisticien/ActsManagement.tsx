@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface ActType {
   id: number;
@@ -27,7 +27,7 @@ const ActsManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/acts');
+      const res = await apiClient.get('/api/acts');
       setTypes(res.data.actTypes || []);
     } catch (e: any) {
       setError('Erreur lors du chargement des types d\'actes');
@@ -45,7 +45,7 @@ const ActsManagement: React.FC = () => {
     setAdding(true);
     setError(null);
     try {
-      await axios.post('/api/acts/types', {
+      await apiClient.post('/api/acts/types', {
         name,
         price: parseFloat(price)
       });
@@ -75,7 +75,7 @@ const ActsManagement: React.FC = () => {
     if (!deletingId) return;
     setDeleteError(null);
     try {
-      await axios.delete(`/api/acts/types/${deletingId}`);
+      await apiClient.delete(`/api/acts/types/${deletingId}`);
       closeDelete();
       fetchTypes();
     } catch (e: any) {
@@ -104,7 +104,7 @@ const ActsManagement: React.FC = () => {
     setEditing(true);
     setEditError(null);
     try {
-      await axios.patch(`/api/acts/types/${editType.id}`, {
+      await apiClient.patch(`/api/acts/types/${editType.id}`, {
         name: editName,
         price: parseFloat(editPrice)
       });

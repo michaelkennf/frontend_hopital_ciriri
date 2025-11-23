@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 
 const AdminOverview: React.FC = () => {
@@ -53,13 +53,13 @@ const AdminOverview: React.FC = () => {
     try {
       // Appels API en parallèle avec timeouts courts
       const [usersRes, logsRes, healthRes] = await Promise.allSettled([
-        axios.get('/api/users', { 
+        apiClient.get('/api/users', { 
           timeout: 5000
         }),
-        axios.get('/api/logs?page=1&limit=1', { 
+        apiClient.get('/api/logs?page=1&limit=1', { 
           timeout: 5000
         }),
-        axios.get('/api/health', { 
+        apiClient.get('/api/health', { 
           timeout: 3000
         })
       ]);

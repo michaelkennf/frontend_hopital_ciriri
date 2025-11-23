@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface ConsultationType {
   id: number;
@@ -26,7 +26,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ patientId, onConsul
   useEffect(() => {
     const fetchConsultationTypes = async () => {
       try {
-        const res = await axios.get('/api/consultations/types');
+        const res = await apiClient.get('/api/consultations/types');
         setConsultationTypes(res.data.consultationTypes || []);
       } catch (err) {
         setError('Erreur lors du chargement des types de consultation');
@@ -47,7 +47,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({ patientId, onConsul
     setSuccess(null);
 
     try {
-      const res = await axios.post('/api/consultations', {
+      const res = await apiClient.post('/api/consultations', {
         patientId,
         consultationTypeId: form.typeId,
         date: new Date().toISOString(),

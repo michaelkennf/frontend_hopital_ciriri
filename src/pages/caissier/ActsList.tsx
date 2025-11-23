@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import jsPDF from 'jspdf';
 
 interface Patient {
@@ -52,8 +52,21 @@ const ActsList: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients');
-      setPatients(res.data.patients || []);
+      const res = await apiClient.get('/api/patients');
+      console.log('📋 Réponse patients ActsList:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let patientsData = [];
+      if (Array.isArray(res.data)) {
+        patientsData = res.data;
+      } else if (res.data && Array.isArray(res.data.patients)) {
+        patientsData = res.data.patients;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        patientsData = res.data.data;
+      }
+      
+      setPatients(patientsData);
+      console.log('✅ Patients chargés dans ActsList:', patientsData.length);
     } catch (e) {
       setPatients([]);
     }
@@ -61,7 +74,7 @@ const ActsList: React.FC = () => {
 
   const fetchActTypes = async () => {
     try {
-      const res = await axios.get('/api/acts');
+      const res = await apiClient.get('/api/acts');
       setActTypes(res.data.actTypes || []);
     } catch (e) {
       setActTypes([]);
@@ -73,8 +86,8 @@ const ActsList: React.FC = () => {
     try {
       // Récupérer les actes programmés ET récemment réalisés
       const [scheduledRes, realizedRes] = await Promise.all([
-        axios.get('/api/acts/scheduled'),
-        axios.get('/api/acts/realized')
+        apiClient.get('/api/acts/scheduled'),
+        apiClient.get('/api/acts/realized')
       ]);
       
       const scheduledActs = scheduledRes.data.acts || [];
@@ -97,7 +110,7 @@ const ActsList: React.FC = () => {
 
   const fetchFacturedActs = async () => {
     try {
-      const res = await axios.get('/api/invoices');
+      const res = await apiClient.get('/api/invoices');
       const actsIds: number[] = [];
       for (const invoice of res.data.invoices || []) {
         for (const item of invoice.items || []) {
@@ -143,7 +156,7 @@ const ActsList: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      await axios.post('/api/acts', form);
+      await apiClient.post('/api/acts', form);
       setSuccess('Acte enregistré avec succès');
       setForm({ patientId: '', actTypeId: '', date: new Date().toISOString().slice(0, 10), amount: '' });
       setShowForm(false);

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 
 // Types
 interface User {
@@ -32,41 +32,10 @@ interface AuthActions {
 type AuthStore = AuthState & AuthActions;
 
 // Configuration axios
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? 'https://polycliniquedesapotres-backend.onrender.com' : 'http://localhost:5000');
-
-console.log('[AUTH STORE] API Base URL:', API_BASE_URL);
+// Configuration de l'API - apiClient gère déjà la configuration
 console.log('[AUTH STORE] Environment:', import.meta.env.MODE);
 
-axios.defaults.baseURL = API_BASE_URL;
-
-// Intercepteur pour ajouter le token aux requêtes
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    console.log('[AXIOS INTERCEPTOR] Token utilisé:', token);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Intercepteur pour gérer les erreurs d'authentification
-axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Ne supprimer le token que pour les erreurs d'authentification spécifiques
-    // Pas pour toutes les erreurs 401
-    if (error.response?.status === 401 && error.response?.data?.error === 'Token invalide') {
-      localStorage.removeItem('token');
-    }
-    return Promise.reject(error);
-  }
-);
+// Les intercepteurs sont maintenant gérés par apiClient
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -82,11 +51,13 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          const response = await axios.post('/api/auth/login', {
+          console.log('[AUTH STORE] Tentative de connexion pour:', email);
+          const response = await apiClient.post('/api/auth/login', {
             email,
             password
           });
 
+          console.log('[AUTH STORE] Réponse de connexion:', response.data);
           const { token, user } = response.data;
           
           // Sauvegarder le token
@@ -104,6 +75,9 @@ export const useAuthStore = create<AuthStore>()(
           // La redirection sera gérée par le composant Login avec useNavigate
           
         } catch (error: any) {
+          console.error('[AUTH STORE] Erreur de connexion:', error);
+          console.error('[AUTH STORE] Détails de l\'erreur:', error.response?.data);
+          
           let errorMessage = 'Erreur de connexion';
           
           // Gestion spécifique des erreurs
@@ -130,7 +104,7 @@ export const useAuthStore = create<AuthStore>()(
       logout: async () => {
         try {
           // Appeler l'API de déconnexion
-          await axios.post('/api/auth/logout');
+          await apiClient.post('/api/auth/logout');
         } catch (error) {
           console.error('Erreur lors de la déconnexion:', error);
         } finally {
@@ -173,7 +147,7 @@ export const useAuthStore = create<AuthStore>()(
         
         
         try {
-          const response = await axios.get('/api/auth/verify');
+          const response = await apiClient.get('/api/auth/verify');
           const { user } = response.data;
           
           console.log('[AUTH STORE] Token valide, utilisateur:', { id: user.id, email: user.email, role: user.role });

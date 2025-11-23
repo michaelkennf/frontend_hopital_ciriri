@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import { GlobalErrorBoundary } from '../../components/GlobalErrorBoundary';
 import { Routes, Route } from 'react-router-dom';
 import Layout from '../../components/Layout';
@@ -77,7 +77,7 @@ function LaborantinOverview() {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get('/api/exams/stats');
+        const response = await apiClient.get('/api/exams/stats');
         setStats(response.data);
       } catch (err: any) {
         console.error('Erreur lors du chargement des statistiques:', err);
@@ -644,7 +644,7 @@ const LaborantinDashboard: React.FC = () => {
     
     const loadPatients = async () => {
       try {
-        const response = await axios.get('/api/exams/laborantin');
+        const response = await apiClient.get('/api/exams/laborantin');
         const allExams = response.data.exams || [];
         
         // Créer une liste unique de patients avec des examens (programmés ET réalisés)
@@ -706,7 +706,7 @@ const LaborantinDashboard: React.FC = () => {
     setError(null);
     
     try {
-      const response = await axios.get('/api/exams/laborantin');
+      const response = await apiClient.get('/api/exams/laborantin');
       const allExams = response.data.exams || [];
       
       // Créer une liste unique de patients avec des examens (programmés ET réalisés)
@@ -757,7 +757,7 @@ const LaborantinDashboard: React.FC = () => {
     
     const loadDossier = async () => {
       try {
-        const response = await axios.get(`/api/exams/history/${patient.id}`);
+        const response = await apiClient.get(`/api/exams/history/${patient.id}`);
         setDossier(response.data);
         console.log('✅ Dossier chargé pour:', patient.firstName, patient.lastName);
         
@@ -788,7 +788,7 @@ const LaborantinDashboard: React.FC = () => {
     if (selectedPatient && dossier) {
       const refreshInterval = setInterval(async () => {
         try {
-          const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+          const dossierRes = await apiClient.get(`/api/exams/history/${selectedPatient.id}`);
           setDossier(dossierRes.data);
           console.log('🔄 Dossier rafraîchi automatiquement');
         } catch (error) {
@@ -804,7 +804,7 @@ const LaborantinDashboard: React.FC = () => {
   const handleRefreshDossier = async () => {
     if (selectedPatient) {
       try {
-        const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+        const dossierRes = await apiClient.get(`/api/exams/history/${selectedPatient.id}`);
         setDossier(dossierRes.data);
         console.log('🔄 Dossier rafraîchi manuellement');
       } catch (error) {
@@ -848,7 +848,7 @@ const LaborantinDashboard: React.FC = () => {
     setError(null);
     
     try {
-      const response = await axios.patch(`/api/exams/${exam.id}/edit-result`, {
+      const response = await apiClient.patch(`/api/exams/${exam.id}/edit-result`, {
         results: editResult.trim()
       });
       
@@ -859,7 +859,7 @@ const LaborantinDashboard: React.FC = () => {
       
       // Rafraîchir le dossier
       if (selectedPatient) {
-        const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+        const dossierRes = await apiClient.get(`/api/exams/history/${selectedPatient.id}`);
         setDossier(dossierRes.data);
       }
       
@@ -893,7 +893,7 @@ const LaborantinDashboard: React.FC = () => {
     console.log('🕐 Heure locale:', submissionTimestamp.toLocaleString('fr-FR'));
     
     try {
-      const response = await axios.patch(`/api/exams/${exam.id}/complete`, {
+      const response = await apiClient.patch(`/api/exams/${exam.id}/complete`, {
         results: newExamResult.trim(),
         completedAt: submissionISO // Heure exacte de soumission
       });
@@ -907,7 +907,7 @@ const LaborantinDashboard: React.FC = () => {
       // Rafraîchir le dossier du patient sélectionné
       if (selectedPatient) {
         try {
-          const dossierRes = await axios.get(`/api/exams/history/${selectedPatient.id}`);
+          const dossierRes = await apiClient.get(`/api/exams/history/${selectedPatient.id}`);
           console.log('📋 Dossier rafraîchi après soumission');
           
           // Vérifier que l'examen a bien été mis à jour

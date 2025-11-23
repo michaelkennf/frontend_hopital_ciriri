@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface ExamType {
   id: number;
@@ -27,7 +27,7 @@ const ExamsManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/exams');
+      const res = await apiClient.get('/api/exams');
       setTypes(res.data.examTypes || []);
     } catch (e: any) {
       setError('Erreur lors du chargement des types d\'examens');
@@ -45,7 +45,7 @@ const ExamsManagement: React.FC = () => {
     setAdding(true);
     setError(null);
     try {
-      await axios.post('/api/exams/types', {
+      await apiClient.post('/api/exams/types', {
         name,
         price: parseFloat(price)
       });
@@ -75,7 +75,7 @@ const ExamsManagement: React.FC = () => {
     if (!deletingId) return;
     setDeleteError(null);
     try {
-      await axios.delete(`/api/exams/types/${deletingId}`);
+      await apiClient.delete(`/api/exams/types/${deletingId}`);
       closeDelete();
       fetchTypes();
     } catch (e: any) {
@@ -104,7 +104,7 @@ const ExamsManagement: React.FC = () => {
     setEditing(true);
     setEditError(null);
     try {
-      await axios.patch(`/api/exams/types/${editType.id}`, {
+      await apiClient.patch(`/api/exams/types/${editType.id}`, {
         name: editName,
         price: parseFloat(editPrice)
       });

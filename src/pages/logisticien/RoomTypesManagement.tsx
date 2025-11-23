@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface RoomType {
   id: number;
@@ -36,8 +36,21 @@ const RoomTypesManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/api/room-types');
-      setRoomTypes(response.data.roomTypes || []);
+      const response = await apiClient.get('/api/room-types');
+      console.log('📋 Réponse room types:', response.data);
+      
+      // Vérifier la structure de la réponse
+      let roomTypesData = [];
+      if (Array.isArray(response.data)) {
+        roomTypesData = response.data;
+      } else if (response.data && Array.isArray(response.data.roomTypes)) {
+        roomTypesData = response.data.roomTypes;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        roomTypesData = response.data.data;
+      }
+      
+      setRoomTypes(roomTypesData);
+      console.log('✅ Room types chargés:', roomTypesData.length);
     } catch (error: any) {
       setError('Erreur lors du chargement des types de chambres');
       console.error('Erreur fetch room types:', error);
@@ -51,7 +64,7 @@ const RoomTypesManagement: React.FC = () => {
     setAdding(true);
     setError(null);
     try {
-      await axios.post('/api/room-types', {
+      await apiClient.post('/api/room-types', {
         name: name.trim(),
         price: parseFloat(price),
         description: description.trim() || null
@@ -83,7 +96,7 @@ const RoomTypesManagement: React.FC = () => {
     if (!deletingId) return;
     setDeleteError(null);
     try {
-      await axios.delete(`/api/room-types/${deletingId}`);
+      await apiClient.delete(`/api/room-types/${deletingId}`);
       closeDelete();
       fetchRoomTypes();
     } catch (error: any) {
@@ -114,7 +127,7 @@ const RoomTypesManagement: React.FC = () => {
     setEditing(true);
     setEditError(null);
     try {
-      await axios.put(`/api/room-types/${editType.id}`, {
+      await apiClient.put(`/api/room-types/${editType.id}`, {
         name: editName.trim(),
         price: parseFloat(editPrice),
         description: editDescription.trim() || null

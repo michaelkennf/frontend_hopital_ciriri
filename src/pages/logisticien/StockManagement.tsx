@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface Medication {
   id: number;
@@ -65,7 +65,7 @@ const StockManagement: React.FC = () => {
 
   const fetchMedications = async () => {
     try {
-      const res = await axios.get('/api/medications');
+      const res = await apiClient.get('/api/medications');
       setMedications(res.data.medications || []);
     } catch (e) {
       setMedications([]);
@@ -75,7 +75,7 @@ const StockManagement: React.FC = () => {
   const fetchMovements = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/medications/stock-movements');
+      const res = await apiClient.get('/api/medications/stock-movements');
       setMovements(res.data.movements || []);
     } catch (e) {
       setMovements([]);
@@ -102,7 +102,7 @@ const StockManagement: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.post('/api/medications/stock-movements', {
+      await apiClient.post('/api/medications/stock-movements', {
         medicationId: form.medicationId,
         type: form.type,
         quantity: form.quantity,
@@ -149,7 +149,7 @@ const StockManagement: React.FC = () => {
     setEditing(true);
     setEditError(null);
     try {
-      await axios.patch(`/api/medications/${editMed.id}`, {
+      await apiClient.patch(`/api/medications/${editMed.id}`, {
         ...editFields
       });
       closeEdit();
@@ -176,7 +176,7 @@ const StockManagement: React.FC = () => {
     if (!deleteId) return;
     setDeleteError(null);
     try {
-      await axios.delete(`/api/medications/${deleteId}`);
+      await apiClient.delete(`/api/medications/${deleteId}`);
       closeDelete();
       fetchMedications();
     } catch (e: any) {
@@ -205,7 +205,7 @@ const StockManagement: React.FC = () => {
     setAddingMed(true);
     setAddError(null);
     try {
-      await axios.post('/api/medications', {
+      await apiClient.post('/api/medications', {
         ...addFields,
         quantity: parseInt(addFields.quantity, 10),
         minQuantity: parseInt(addFields.minQuantity, 10),

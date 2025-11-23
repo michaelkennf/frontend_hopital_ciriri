@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import { GlobalErrorBoundary } from '../../components/GlobalErrorBoundary';
 import { Routes, Route } from 'react-router-dom';
 import Layout from '../../components/Layout';
@@ -60,23 +60,21 @@ function MedecinOverview() {
 
   React.useEffect(() => {
     setStats(s => ({ ...s, loading: true, error: null }));
-    import('axios').then(({ default: axios }) => {
-      axios.get('/api/patients')
-        .then(res => {
-          const patients = res.data.patients || [];
-          const now = new Date();
-          const todayStr = now.toISOString().slice(0, 10);
-          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-          const total = patients.length;
-          const today = patients.filter((p: any) => (p.createdAt || '').slice(0, 10) === todayStr).length;
-          const month = patients.filter((p: any) => {
-            const created = new Date(p.createdAt);
-            return created >= lastMonth && created <= now;
-          }).length;
-          setStats({ total, today, month, loading: false, error: null });
-        })
-        .catch(() => setStats(s => ({ ...s, loading: false, error: 'Erreur lors du chargement des statistiques' })));
-    });
+    apiClient.get('/api/patients')
+      .then(res => {
+        const patients = res.data.patients || [];
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10);
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        const total = patients.length;
+        const today = patients.filter((p: any) => (p.createdAt || '').slice(0, 10) === todayStr).length;
+        const month = patients.filter((p: any) => {
+          const created = new Date(p.createdAt);
+          return created >= lastMonth && created <= now;
+        }).length;
+        setStats({ total, today, month, loading: false, error: null });
+      })
+      .catch(() => setStats(s => ({ ...s, loading: false, error: 'Erreur lors du chargement des statistiques' })));
   }, []);
 
   return (
@@ -215,7 +213,7 @@ function PatientsDossiers() {
     setError(null);
     
     try {
-      const response = await axios.patch(`/api/consultations/${consultationId}/edit-notes`, {
+      const response = await apiClient.patch(`/api/consultations/${consultationId}/edit-notes`, {
         notes: editNotesInputs[consultationId]
       });
       
@@ -223,7 +221,7 @@ function PatientsDossiers() {
       
       // Rafraîchir le dossier
       if (selectedPatient) {
-        const dossierRes = await axios.get(`/api/patients/${selectedPatient.id}/dossier`);
+        const dossierRes = await apiClient.get(`/api/patients/${selectedPatient.id}/dossier`);
         setDossier(dossierRes.data);
       }
       
@@ -277,7 +275,7 @@ function PatientsDossiers() {
   // Charger la liste des patients au montage
   useEffect(() => {
     setLoading(true);
-    axios.get('/api/patients')
+    apiClient.get('/api/patients')
       .then(res => setPatients(res.data.patients))
       .catch(() => setError('Erreur lors du chargement des patients'))
       .finally(() => setLoading(false));
@@ -287,7 +285,7 @@ function PatientsDossiers() {
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
     setLoading(true);
-    axios.get(`/api/patients/${patient.id}/dossier`)
+    apiClient.get(`/api/patients/${patient.id}/dossier`)
       .then(res => {
         setDossier(res.data);
         
@@ -325,7 +323,7 @@ function PatientsDossiers() {
   // Charger les types de consultation quand un patient est sélectionné
   useEffect(() => {
     if (selectedPatient) {
-      axios.get('/api/consultations/types')
+      apiClient.get('/api/consultations/types')
         .then(res => setConsultationTypes(res.data.consultationTypes))
         .catch(() => setError('Erreur lors du chargement des types de consultation'));
     }
@@ -345,7 +343,7 @@ function PatientsDossiers() {
         notes: newConsultation.notes
       });
       
-      const res = await axios.post('/api/consultations', {
+      const res = await apiClient.post('/api/consultations', {
         patientId: selectedPatient.id,
         consultationTypeId: newConsultation.typeId, // Utilise le type auto-sélectionné
         date: new Date().toISOString(),
@@ -355,7 +353,7 @@ function PatientsDossiers() {
       console.log('Réponse de la création de consultation:', res.data);
       
       // Rafraîchir le dossier
-      const dossierRes = await axios.get(`/api/patients/${selectedPatient.id}/dossier`);
+      const dossierRes = await apiClient.get(`/api/patients/${selectedPatient.id}/dossier`);
       console.log('Dossier mis à jour:', dossierRes.data);
       setDossier(dossierRes.data);
       
@@ -413,13 +411,13 @@ function PatientsDossiers() {
     setTreatmentForms(forms => ({ ...forms, [consultationId]: { ...form, loading: true } }));
     setError(null);
     try {
-      await axios.post(`/api/consultations/${consultationId}/treatments`, {
+      await apiClient.post(`/api/consultations/${consultationId}/treatments`, {
         medicationName: form.medicationName,
         notes: form.notes
       });
       // Rafraîchir le dossier
       if (selectedPatient) {
-        const dossierRes = await axios.get(`/api/patients/${selectedPatient.id}/dossier`);
+        const dossierRes = await apiClient.get(`/api/patients/${selectedPatient.id}/dossier`);
         setDossier(dossierRes.data);
       }
       setTreatmentForms(forms => ({ 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface SupplyRequestItem {
   designation: string;
@@ -87,10 +87,10 @@ const RequestsValidation: React.FC = () => {
     setLoading(true);
     try {
       const [supplyRes, advanceRes, creditRes, leaveRes] = await Promise.all([
-        axios.get('/api/supply-requests'),
-        axios.get('/api/advance-requests'),
-        axios.get('/api/credit-requests'),
-        axios.get('/api/leave-requests')
+        apiClient.get('/api/supply-requests'),
+        apiClient.get('/api/advance-requests'),
+        apiClient.get('/api/credit-requests'),
+        apiClient.get('/api/leave-requests')
       ]);
       setSupplyRequests(supplyRes.data.requests || []);
       setAdvanceRequests(advanceRes.data.requests || []);
@@ -121,7 +121,7 @@ const RequestsValidation: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/supply-requests/${id}/approve`, {});
+      await apiClient.patch(`/api/supply-requests/${id}/approve`, {});
       setSuccess('Demande d’approvisionnement approuvée !');
       fetchAll();
     } catch (e: any) {
@@ -135,7 +135,7 @@ const RequestsValidation: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/supply-requests/${id}/reject`, { reason: comment[`supply-${id}`] || '' });
+      await apiClient.patch(`/api/supply-requests/${id}/reject`, { reason: comment[`supply-${id}`] || '' });
       setSuccess('Demande d’approvisionnement rejetée !');
       fetchAll();
     } catch (e: any) {
@@ -151,7 +151,7 @@ const RequestsValidation: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/advance-requests/${id}/validate`, {
+      await apiClient.patch(`/api/advance-requests/${id}/validate`, {
         status,
         pdgComment: comment[`advance-${id}`] || '',
       });
@@ -170,7 +170,7 @@ const RequestsValidation: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/credit-requests/${id}`, {
+      await apiClient.patch(`/api/credit-requests/${id}`, {
         status,
         pdgComment: comment[`credit-${id}`] || '',
       });
@@ -189,7 +189,7 @@ const RequestsValidation: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/leave-requests/${id}/validate`, {
+      await apiClient.patch(`/api/leave-requests/${id}/validate`, {
         status,
         pdgComment: comment[`leave-${id}`] || '',
       });

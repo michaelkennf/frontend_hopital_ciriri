@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const ExamsListHospitalisation: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
@@ -29,7 +29,7 @@ const ExamsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=hospitalisation');
+      const res = await apiClient.get('/api/patients?service=hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -38,7 +38,7 @@ const ExamsListHospitalisation: React.FC = () => {
 
   const fetchExamTypes = async () => {
     try {
-      const res = await axios.get('/api/exams');
+      const res = await apiClient.get('/api/exams');
       setExamTypes(res.data.examTypes || []);
     } catch (e) {
       setExamTypes([]);
@@ -49,7 +49,7 @@ const ExamsListHospitalisation: React.FC = () => {
     setLoading(true);
     try {
       // Utiliser la nouvelle route spécifique à l'hospitalisation
-      const res = await axios.get('/api/exams/hospitalisation');
+      const res = await apiClient.get('/api/exams/hospitalisation');
       const examsData = res.data.exams || [];
       
       console.log('🔍 Données reçues de l\'API examens:', res.data);
@@ -124,7 +124,7 @@ const ExamsListHospitalisation: React.FC = () => {
         return;
       }
 
-      const res = await axios.post('/api/exams', {
+      const res = await apiClient.post('/api/exams', {
         patientId: form.patientId,
         examTypeId: form.examTypeId,
         date: form.date,
@@ -191,7 +191,7 @@ const ExamsListHospitalisation: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/exams/${editingExam.id}`, {
+      await apiClient.patch(`/api/exams/${editingExam.id}`, {
         patientId: editForm.patientId,
         examTypeId: editForm.examTypeId,
         date: editForm.date,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../utils/axiosConfig';
+import { apiClient } from '../../utils/apiClient';
 
 function generateFolderNumber(currentYear: number, lastNumber: number) {
   return `${currentYear}-${String(lastNumber + 1).padStart(3, '0')}`;
@@ -57,20 +57,38 @@ const PatientsManagement: React.FC = () => {
   }, []);
 
   const fetchPatients = async () => {
-    setLoading(true);
-    setError(null);
     try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔄 Chargement des patients...');
       const res = await apiClient.get('/api/patients');
-      setPatients(res.data.patients || []);
-      // Pour la génération locale du numéro de dossier (affichage uniquement)
-      if (res.data.patients && res.data.patients.length > 0) {
-        const last = res.data.patients[0].folderNumber;
-        if (last && last.startsWith(`${currentYear}-`)) {
-          setLastFolderNumber(parseInt(last.split('-')[1], 10));
-        }
+      console.log('📋 Réponse patients complète:', res);
+      console.log('📋 Données patients:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let patientsData = [];
+      if (Array.isArray(res.data)) {
+        patientsData = res.data;
+      } else if (res.data && Array.isArray(res.data.patients)) {
+        patientsData = res.data.patients;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        patientsData = res.data.data;
       }
+      
+      console.log('✅ Patients chargés:', patientsData.length, 'patients');
+      setPatients(patientsData);
+      
+      // Pour la génération locale du numéro de dossier (affichage uniquement)
+      if (patientsData.length > 0) {
+        const last = patientsData[0].folderNumber;
+          if (last && last.startsWith(`${currentYear}-`)) {
+            setLastFolderNumber(parseInt(last.split('-')[1], 10));
+          }
+        }
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors du chargement des patients');
+      console.error('❌ Erreur chargement patients:', e);
+      setError(e.response?.data?.error || e.message || 'Erreur lors du chargement des patients');
     } finally {
       setLoading(false);
     }
@@ -104,10 +122,14 @@ const PatientsManagement: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+    
     try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      
+      console.log('📝 Création du patient:', form);
+      
       const res = await apiClient.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
@@ -117,23 +139,42 @@ const PatientsManagement: React.FC = () => {
         adresse: form.adresse,
         telephone: form.telephone,
       });
-      setSuccess('Patient enregistré avec succès !');
-      setShowForm(false);
-      setForm({
-        nom: '',
-        postNom: '',
-        sexe: '',
-        dateNaissance: '',
-        age: '',
-        poids: '',
-        adresse: '',
-        telephone: '',
-        numeroDossier: '',
-      });
-      // Recharger la liste
-      fetchPatients();
+      
+      if (res.data.success) {
+        console.log('✅ Patient créé:', res.data.patient);
+        setSuccess('Patient enregistré avec succès !');
+        
+        // Réinitialiser le formulaire
+        setForm({
+          nom: '',
+          postNom: '',
+          sexe: '',
+          dateNaissance: '',
+          age: '',
+          poids: '',
+          adresse: '',
+          telephone: '',
+          numeroDossier: '',
+        });
+        
+        setShowForm(false);
+        
+        // Attendre un peu puis recharger la liste
+        console.log('⏳ Attente de la synchronisation...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Recharger la liste des patients
+        console.log('🔄 Rechargement de la liste...');
+        await fetchPatients();
+        
+        console.log('✅ Liste mise à jour');
+        
+      } else {
+        throw new Error(res.data.error || 'Erreur lors de la création');
+      }
     } catch (e: any) {
-      setError(e.response?.data?.error || 'Erreur lors de l’enregistrement du patient');
+      console.error('❌ Erreur création patient:', e);
+      setError(e.response?.data?.error || e.message || 'Erreur lors de l\'enregistrement du patient');
     } finally {
       setLoading(false);
     }
@@ -143,6 +184,7 @@ const PatientsManagement: React.FC = () => {
     const searchText = `${p.folderNumber} ${p.lastName} ${p.firstName}`.toLowerCase();
     return searchText.includes(search.toLowerCase());
   });
+
 
   return (
     <div>
@@ -154,7 +196,7 @@ const PatientsManagement: React.FC = () => {
       </div>
       <input
         type="text"
-        className="input-field mb-4"
+        className="input-field"
         placeholder="Rechercher un patient (nom, prénom ou dossier)"
         value={search}
         onChange={e => setSearch(e.target.value)}

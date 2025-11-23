@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const getDaysInMonth = (month: number, year: number) => {
   const days: { day: string; date: string }[] = [];
@@ -33,7 +33,7 @@ const Attendance: React.FC = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await axios.get('/api/employees');
+        const res = await apiClient.get('/api/employees');
         setEmployees(res.data || []);
       } catch {
         setEmployees([]);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface Employee {
   id: number;
@@ -26,7 +26,7 @@ const EmployeesList: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get('/api/employees');
+        const res = await apiClient.get('/api/employees');
         setEmployees(res.data || []);
       } catch (e: any) {
         setError(e.response?.data?.error || 'Erreur lors du chargement des employés');

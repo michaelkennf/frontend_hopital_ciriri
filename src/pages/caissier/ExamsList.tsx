@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import jsPDF from 'jspdf';
 
 interface Patient {
@@ -57,8 +57,21 @@ const ExamsList: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients');
-      setPatients(res.data.patients || []);
+      const res = await apiClient.get('/api/patients');
+      console.log('📋 Réponse patients ExamsList:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let patientsData = [];
+      if (Array.isArray(res.data)) {
+        patientsData = res.data;
+      } else if (res.data && Array.isArray(res.data.patients)) {
+        patientsData = res.data.patients;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        patientsData = res.data.data;
+      }
+      
+      setPatients(patientsData);
+      console.log('✅ Patients chargés dans ExamsList:', patientsData.length);
     } catch (e) {
       setPatients([]);
     }
@@ -66,7 +79,7 @@ const ExamsList: React.FC = () => {
 
   const fetchExamTypes = async () => {
     try {
-      const res = await axios.get('/api/exams');
+      const res = await apiClient.get('/api/exams');
       setExamTypes(res.data.examTypes || []);
     } catch (e) {
       setExamTypes([]);
@@ -78,8 +91,8 @@ const ExamsList: React.FC = () => {
     try {
       // Récupérer les examens programmés ET récemment réalisés
       const [scheduledRes, realizedRes] = await Promise.all([
-        axios.get('/api/exams/scheduled'),
-        axios.get('/api/exams/realized')
+        apiClient.get('/api/exams/scheduled'),
+        apiClient.get('/api/exams/realized')
       ]);
       
       const scheduledExams = scheduledRes.data.exams || [];
@@ -102,7 +115,7 @@ const ExamsList: React.FC = () => {
 
   const fetchFacturedExams = async () => {
     try {
-      const res = await axios.get('/api/invoices');
+      const res = await apiClient.get('/api/invoices');
       const examsIds: number[] = [];
       for (const invoice of res.data.invoices || []) {
         for (const item of invoice.items || []) {
@@ -135,7 +148,7 @@ const ExamsList: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.post('/api/exams', {
+      await apiClient.post('/api/exams', {
         patientId: form.patientId,
         examTypeId: form.examTypeId,
         date: form.date,
@@ -190,7 +203,7 @@ const ExamsList: React.FC = () => {
   const handlePrintInvoice = async (exam: Exam) => {
     try {
       // Appel API pour créer la facture
-      await axios.post(`/api/exams/${exam.id}/facture`);
+      await apiClient.post(`/api/exams/${exam.id}/facture`);
       setTimeout(fetchFacturedExams, 400); // Rafraîchir la liste des examens facturés après impression
     } catch (e) {
       // ignore
@@ -428,7 +441,7 @@ const ExamsList: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/exams/${editingExam.id}`, {
+      await apiClient.patch(`/api/exams/${editingExam.id}`, {
         patientId: editForm.patientId,
         examTypeId: editForm.examTypeId,
         date: editForm.date,
@@ -465,7 +478,7 @@ const ExamsList: React.FC = () => {
       </div>
       <input
         type="text"
-        className="input-field mb-4"
+        className="input-field"
         placeholder="Rechercher un patient (nom ou dossier)"
         value={search}
         onChange={e => setSearch(e.target.value)}
@@ -526,7 +539,7 @@ const ExamsList: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Patient</label>
                 <input
                   type="text"
-                  className="input-field mb-1"
+                  className="input-field"
                   placeholder="Rechercher un patient..."
                   value={patientSearch}
                   onChange={e => setPatientSearch(e.target.value)}
@@ -553,7 +566,7 @@ const ExamsList: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Type d'examen</label>
                 <input
                   type="text"
-                  className="input-field mb-1"
+                  className="input-field"
                   placeholder="Rechercher un examen..."
                   value={examTypeSearch}
                   onChange={e => setExamTypeSearch(e.target.value)}
@@ -613,7 +626,7 @@ const ExamsList: React.FC = () => {
                   name="patientId"
                   value={editForm.patientId}
                   onChange={handleEditChange}
-                  className="input w-full"
+                  className="input-field"
                   required
                 >
                   <option value="">Sélectionner un patient</option>
@@ -628,7 +641,7 @@ const ExamsList: React.FC = () => {
                   name="examTypeId"
                   value={editForm.examTypeId}
                   onChange={handleEditChange}
-                  className="input w-full"
+                  className="input-field"
                   required
                 >
                   <option value="">Sélectionner un examen</option>
@@ -644,7 +657,7 @@ const ExamsList: React.FC = () => {
                   name="date"
                   value={editForm.date}
                   onChange={handleEditChange}
-                  className="input w-full"
+                  className="input-field"
                   required
                 />
               </div>

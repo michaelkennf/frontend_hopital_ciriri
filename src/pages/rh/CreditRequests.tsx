@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import jsPDF from 'jspdf';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -51,7 +51,7 @@ const CreditRequests: React.FC = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/credit-requests');
+      const res = await apiClient.get('/api/credit-requests');
       console.log('Réponse API credit-requests:', res.data);
       // Les données sont directement un tableau
       const requestsData = Array.isArray(res.data) ? res.data : [];
@@ -66,7 +66,7 @@ const CreditRequests: React.FC = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get('/api/employees');
+      const res = await apiClient.get('/api/employees');
       console.log('Réponse API employees:', res.data);
       // Les données sont directement un tableau
       setEmployees(Array.isArray(res.data) ? res.data : []);
@@ -118,7 +118,7 @@ const CreditRequests: React.FC = () => {
         reason: form.reason,
         repaymentPeriod: repaymentPeriod,
       });
-      await axios.post('/api/credit-requests', {
+      await apiClient.post('/api/credit-requests', {
         employeeId: parseInt(form.employeeId, 10),
         amount: amount,
         reason: form.reason,
@@ -142,7 +142,7 @@ const CreditRequests: React.FC = () => {
 
   const handleValidate = async (id: number, status: 'approved' | 'rejected') => {
     try {
-      await axios.patch(`/api/credit-requests/${id}`, {
+      await apiClient.patch(`/api/credit-requests/${id}`, {
         status,
         pdgComment: comment[id] || ''
       });

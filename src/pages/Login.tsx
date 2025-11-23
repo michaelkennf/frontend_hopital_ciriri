@@ -76,7 +76,7 @@ const Login: React.FC = () => {
             id="email"
             type="email"
             placeholder="Entrez votre email"
-            className="input-field"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-primary focus:ring-primary focus:outline-none transition"
             autoComplete="username"
             value={email}
             onChange={(e) => {
@@ -86,7 +86,7 @@ const Login: React.FC = () => {
             required
           />
         </div>
-        <div className="mb-2">
+        <div className="mb-4">
           <label className="block text-gray-700 mb-1" htmlFor="password">
             Mot de passe
           </label>
@@ -95,7 +95,7 @@ const Login: React.FC = () => {
               id="password"
               type={showPassword ? 'text' : 'password'}
               placeholder="Entrez votre mot de passe"
-              className="input-field pr-10"
+              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:border-primary focus:ring-primary focus:outline-none transition"
               autoComplete="current-password"
               value={password}
               onChange={(e) => {

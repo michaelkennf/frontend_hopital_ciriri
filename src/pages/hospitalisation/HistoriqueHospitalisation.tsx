@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const initialFilters = {
   name: '',
@@ -27,7 +27,7 @@ const HistoriqueHospitalisation: React.FC = () => {
   const fetchHospitalisations = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/hospitalization-history');
+      const response = await apiClient.get('/api/hospitalization-history');
       setHospitalisations(response.data.histories);
     } catch (error: any) {
       setError('Erreur lors du chargement des historiques');
@@ -45,7 +45,7 @@ const HistoriqueHospitalisation: React.FC = () => {
   // Récupérer le dernier patient hospitalisé pour pré-remplir
   const fetchLastHospitalizedPatient = async () => {
     try {
-      const response = await axios.get('/api/hospitalizations');
+      const response = await apiClient.get('/api/hospitalizations');
       const hospitalizations = response.data.hospitalizations;
       
       if (hospitalizations.length > 0) {
@@ -103,7 +103,7 @@ const HistoriqueHospitalisation: React.FC = () => {
       // Essayer de trouver le patient correspondant au nom (optionnel)
       let patientId = null;
       try {
-        const patientsResponse = await axios.get('/api/patients');
+        const patientsResponse = await apiClient.get('/api/patients');
         const patients = patientsResponse.data.patients;
         const [lastName, firstName] = filters.name.split(' ');
         const patient = patients.find((p: any) => 
@@ -134,7 +134,7 @@ const HistoriqueHospitalisation: React.FC = () => {
         notes: '' // À remplir plus tard
       };
 
-      await axios.post('/api/hospitalization-history', historyData);
+      await apiClient.post('/api/hospitalization-history', historyData);
       
       setSuccess('Historique d\'hospitalisation enregistré avec succès !');
       

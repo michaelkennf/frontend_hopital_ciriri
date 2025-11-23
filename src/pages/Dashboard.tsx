@@ -1,49 +1,37 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { Navigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      const role = user.role;
-      let redirectPath = '/dashboard';
-      
-      switch (role) {
-        case 'admin':
-          redirectPath = '/admin';
-          break;
-        case 'pdg':
-          redirectPath = '/pdg';
-          break;
-        case 'rh':
-          redirectPath = '/rh';
-          break;
-        case 'caissier':
-          redirectPath = '/caissier';
-          break;
-        case 'logisticien':
-          redirectPath = '/logisticien';
-          break;
-        default:
-          redirectPath = '/dashboard';
-      }
-      
-      navigate(redirectPath, { replace: true });
-    }
-  }, [user, navigate]);
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-  // Affichage temporaire pendant la redirection
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Redirection en cours...</p>
-      </div>
-    </div>
-  );
+  // Redirection basée sur le rôle
+  switch (user.role) {
+    case 'ADMIN':
+      return <Navigate to="/admin" replace />;
+    case 'PDG':
+      return <Navigate to="/pdg" replace />;
+    case 'RH':
+      return <Navigate to="/rh" replace />;
+    case 'CAISSIER':
+      return <Navigate to="/caissier" replace />;
+    case 'LOGISTICIEN':
+      return <Navigate to="/logisticien" replace />;
+    case 'MEDECIN':
+      return <Navigate to="/medecin" replace />;
+    case 'HOSPITALISATION':
+      return <Navigate to="/hospitalisation" replace />;
+    case 'LABORANTIN':
+      return <Navigate to="/laborantin" replace />;
+    case 'MATERNITE':
+      return <Navigate to="/maternite" replace />;
+    default:
+      return <Navigate to="/login" replace />;
+  }
 };
 
-export default Dashboard; 
+export default Dashboard;

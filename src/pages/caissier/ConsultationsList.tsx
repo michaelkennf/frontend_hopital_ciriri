@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface Patient {
   id: number;
@@ -59,18 +59,50 @@ const ConsultationsList: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients');
-      setPatients(res.data.patients || []);
-    } catch (e) {
+      console.log('🔄 Chargement des patients pour consultations...');
+      const res = await apiClient.get('/api/patients');
+      console.log('📋 Réponse patients complète:', res);
+      console.log('📋 Données patients:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let patientsData = [];
+      if (Array.isArray(res.data)) {
+        patientsData = res.data;
+      } else if (res.data && Array.isArray(res.data.patients)) {
+        patientsData = res.data.patients;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        patientsData = res.data.data;
+      }
+      
+      setPatients(patientsData);
+      console.log('✅ Patients chargés:', patientsData.length);
+    } catch (e: any) {
+      console.error('❌ Erreur chargement patients:', e);
       setPatients([]);
     }
   };
 
   const fetchConsultationTypes = async () => {
     try {
-      const res = await axios.get('/api/consultations/types');
-      setConsultationTypes(res.data.consultationTypes || []);
-    } catch (e) {
+      console.log('🔄 Chargement des types de consultation...');
+      const res = await apiClient.get('/api/consultations/types');
+      console.log('📋 Réponse types complète:', res);
+      console.log('📋 Données types:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let typesData = [];
+      if (Array.isArray(res.data)) {
+        typesData = res.data;
+      } else if (res.data && Array.isArray(res.data.consultationTypes)) {
+        typesData = res.data.consultationTypes;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        typesData = res.data.data;
+      }
+      
+      setConsultationTypes(typesData);
+      console.log('✅ Types chargés:', typesData.length);
+    } catch (e: any) {
+      console.error('❌ Erreur chargement types:', e);
       setConsultationTypes([]);
     }
   };
@@ -78,9 +110,25 @@ const ConsultationsList: React.FC = () => {
   const fetchConsultations = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/consultations');
-      setConsultations(res.data.consultations || []);
-    } catch (e) {
+      console.log('🔄 Chargement des consultations...');
+      const res = await apiClient.get('/api/consultations');
+      console.log('📋 Réponse consultations complète:', res);
+      console.log('📋 Données consultations:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let consultationsData = [];
+      if (Array.isArray(res.data)) {
+        consultationsData = res.data;
+      } else if (res.data && Array.isArray(res.data.consultations)) {
+        consultationsData = res.data.consultations;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        consultationsData = res.data.data;
+      }
+      
+      setConsultations(consultationsData);
+      console.log('✅ Consultations chargées:', consultationsData.length);
+    } catch (e: any) {
+      console.error('❌ Erreur chargement consultations:', e);
       setConsultations([]);
     } finally {
       setLoading(false);
@@ -89,14 +137,25 @@ const ConsultationsList: React.FC = () => {
 
   const fetchFacturedConsultations = async () => {
     try {
-      console.log('🔍 fetchFacturedConsultations: Début de la récupération...');
-      const res = await axios.get('/api/invoices', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      console.log('📊 fetchFacturedConsultations: Réponse API:', res.data);
+      console.log('🔍 Chargement des consultations facturées...');
+      const res = await apiClient.get('/api/invoices');
+      console.log('📋 Réponse factures complète:', res);
+      console.log('📋 Données factures:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let invoicesData = [];
+      if (Array.isArray(res.data)) {
+        invoicesData = res.data;
+      } else if (res.data && Array.isArray(res.data.invoices)) {
+        invoicesData = res.data.invoices;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        invoicesData = res.data.data;
+      }
+      
+      console.log('📊 Factures chargées:', invoicesData.length);
       
       const consultationsIds: number[] = [];
-      for (const invoice of res.data.invoices || []) {
+      for (const invoice of invoicesData) {
         console.log(`📋 Facture ${invoice.invoiceNumber}:`, invoice.items?.length || 0, 'items');
         for (const item of invoice.items || []) {
           console.log(`  - Item: type=${item.type}, consultationId=${item.consultationId}`);
@@ -106,10 +165,10 @@ const ConsultationsList: React.FC = () => {
           }
         }
       }
-      console.log('🎯 fetchFacturedConsultations: IDs finaux:', consultationsIds);
+      console.log('🎯 Consultations facturées:', consultationsIds.length);
       setFacturedConsultations(consultationsIds);
-    } catch (e) {
-      console.error('❌ Erreur fetchFacturedConsultations:', e);
+    } catch (e: any) {
+      console.error('❌ Erreur chargement consultations facturées:', e);
     }
   };
 
@@ -131,7 +190,7 @@ const ConsultationsList: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.post('/api/consultations', {
+      await apiClient.post('/api/consultations', {
         patientId: form.patientId,
         consultationTypeId: form.consultationTypeId,
         date: form.date,
@@ -169,7 +228,7 @@ const ConsultationsList: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/consultations/${editingConsultation.id}`, {
+      await apiClient.patch(`/api/consultations/${editingConsultation.id}`, {
         patientId: editForm.patientId,
         consultationTypeId: editForm.consultationTypeId,
         date: editForm.date,
@@ -224,11 +283,11 @@ const ConsultationsList: React.FC = () => {
   const handlePrintFacture = async (consultation: Consultation) => {
     setFacturedConsultations((prev) => [...prev, Number(consultation.id)]);
     try {
-      await axios.post(`/api/consultations/${consultation.id}/facture`);
+      await apiClient.post(`/api/consultations/${consultation.id}/facture`);
       // Synchronisation conditionnelle après un délai
       setTimeout(async () => {
         try {
-          const res = await axios.get('/api/invoices', {
+          const res = await apiClient.get('/api/invoices', {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
           });
           const consultationsIds: number[] = [];
@@ -547,7 +606,7 @@ const ConsultationsList: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Patient</label>
                 <input
                   type="text"
-                  className="input-field mb-1"
+                  className="input-field"
                   placeholder="Rechercher un patient..."
                   value={patientSearch}
                   onChange={e => setPatientSearch(e.target.value)}

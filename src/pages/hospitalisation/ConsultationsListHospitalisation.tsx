@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface Patient {
   id: number;
@@ -52,7 +52,7 @@ const ConsultationsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=consultations_hospitalisation');
+      const res = await apiClient.get('/api/patients?service=consultations_hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -61,7 +61,7 @@ const ConsultationsListHospitalisation: React.FC = () => {
 
   const fetchConsultationTypes = async () => {
     try {
-      const res = await axios.get('/api/consultations/types');
+      const res = await apiClient.get('/api/consultations/types');
       setConsultationTypes(res.data.consultationTypes || []);
     } catch (e) {
       setConsultationTypes([]);
@@ -71,7 +71,7 @@ const ConsultationsListHospitalisation: React.FC = () => {
   const fetchConsultations = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/consultations');
+      const res = await apiClient.get('/api/consultations');
       const consultationsData = res.data.consultations || [];
       
       console.log('🔍 Données reçues de l\'API:', res.data);
@@ -148,7 +148,7 @@ const ConsultationsListHospitalisation: React.FC = () => {
         return;
       }
 
-      const res = await axios.post('/api/consultations', {
+      const res = await apiClient.post('/api/consultations', {
         patientId: parseInt(form.patientId),
         consultationTypeId: parseInt(form.consultationTypeId),
         date: form.date,
@@ -213,7 +213,7 @@ const ConsultationsListHospitalisation: React.FC = () => {
         return;
       }
 
-      const res = await axios.put(`/api/consultations/${editingConsultation.id}`, {
+      const res = await apiClient.put(`/api/consultations/${editingConsultation.id}`, {
         patientId: parseInt(editForm.patientId),
         consultationTypeId: parseInt(editForm.consultationTypeId),
         date: editForm.date,

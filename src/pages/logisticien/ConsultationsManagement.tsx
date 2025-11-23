@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface ConsultationType {
   id: number;
@@ -27,7 +27,7 @@ const ConsultationsManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/consultations/types');
+      const res = await apiClient.get('/api/consultations/types');
       setTypes(res.data.consultationTypes || []);
     } catch (e: any) {
       setError('Erreur lors du chargement des types de consultations');
@@ -45,7 +45,7 @@ const ConsultationsManagement: React.FC = () => {
     setAdding(true);
     setError(null);
     try {
-      await axios.post('/api/consultations/types', {
+      await apiClient.post('/api/consultations/types', {
         name,
         price: parseFloat(price)
       });
@@ -75,7 +75,7 @@ const ConsultationsManagement: React.FC = () => {
     if (!deletingId) return;
     setDeleteError(null);
     try {
-      await axios.delete(`/api/consultations/types/${deletingId}`);
+      await apiClient.delete(`/api/consultations/types/${deletingId}`);
       closeDelete();
       fetchTypes();
     } catch (e: any) {
@@ -104,7 +104,7 @@ const ConsultationsManagement: React.FC = () => {
     setEditing(true);
     setEditError(null);
     try {
-      await axios.patch(`/api/consultations/types/${editType.id}`, {
+      await apiClient.patch(`/api/consultations/types/${editType.id}`, {
         name: editName,
         price: parseFloat(editPrice)
       });

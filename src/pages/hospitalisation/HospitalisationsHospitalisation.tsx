@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 // Fonction helper pour ajouter l'authentification aux appels axios
 const authenticatedAxios = {
   get: (url: string) => {
     const token = localStorage.getItem('token');
-    return axios.get(url, {
+    return apiClient.get(url, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -13,7 +13,7 @@ const authenticatedAxios = {
   },
   post: (url: string, data: any) => {
     const token = localStorage.getItem('token');
-    return axios.post(url, data, {
+    return apiClient.post(url, data, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -21,7 +21,7 @@ const authenticatedAxios = {
   },
   patch: (url: string, data: any) => {
     const token = localStorage.getItem('token');
-    return axios.patch(url, data, {
+    return apiClient.patch(url, data, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

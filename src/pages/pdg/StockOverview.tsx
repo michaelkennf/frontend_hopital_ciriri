@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -48,8 +48,8 @@ const StockOverview: React.FC = () => {
       setError(null);
       try {
         const [medRes, movRes] = await Promise.all([
-          axios.get('/api/medications'),
-          axios.get('/api/medications/stock-movements')
+          apiClient.get('/api/medications'),
+          apiClient.get('/api/medications/stock-movements')
         ]);
         setMedications(medRes.data.medications || []);
         setMovements(movRes.data.movements || []);

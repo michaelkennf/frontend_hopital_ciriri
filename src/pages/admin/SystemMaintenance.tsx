@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface SystemStatus {
   database: {
@@ -57,7 +57,7 @@ const SystemMaintenance: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get('/api/maintenance/status');
+      const response = await apiClient.get('/api/maintenance/status');
       setSystemStatus(response.data);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erreur lors du chargement du statut système');
@@ -71,7 +71,7 @@ const SystemMaintenance: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const response = await axios.post('/api/maintenance/optimize-database', {});
+      const response = await apiClient.post('/api/maintenance/optimize-database', {});
       setSuccess(response.data.message);
       fetchSystemStatus(); // Rafraîchir les données
     } catch (err: any) {
@@ -98,7 +98,7 @@ const SystemMaintenance: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      const response = await axios.post('/api/maintenance/clean-logs', {
+      const response = await apiClient.post('/api/maintenance/clean-logs', {
         daysToKeep: cleanLogsDays
       });
       setSuccess(`${response.data.message} (${response.data.totalLogsBefore} → ${response.data.totalLogsAfter} logs)`);

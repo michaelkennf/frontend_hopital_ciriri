@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const MedicationsListHospitalisation: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
@@ -30,7 +30,7 @@ const MedicationsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=medicaments_hospitalisation');
+      const res = await apiClient.get('/api/patients?service=medicaments_hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -39,7 +39,7 @@ const MedicationsListHospitalisation: React.FC = () => {
 
   const fetchMedications = async () => {
     try {
-      const res = await axios.get('/api/medications');
+      const res = await apiClient.get('/api/medications');
       setMedications(res.data.medications || []);
     } catch (e) {
       setMedications([]);
@@ -50,7 +50,7 @@ const MedicationsListHospitalisation: React.FC = () => {
     setLoading(true);
     try {
       // Utiliser la nouvelle route spécifique à l'hospitalisation
-      const res = await axios.get('/api/medications/hospitalisation');
+      const res = await apiClient.get('/api/medications/hospitalisation');
       const salesData = res.data.sales || [];
       
       console.log('🔍 Données reçues de l\'API médicaments:', res.data);
@@ -141,7 +141,7 @@ const MedicationsListHospitalisation: React.FC = () => {
         date: form.date
       });
 
-      const res = await axios.post('/api/medications/sales', {
+      const res = await apiClient.post('/api/medications/sales', {
         patientId: form.patientId,
         medicationId: form.medicationId,
         quantity: quantityValue,
@@ -232,7 +232,7 @@ const MedicationsListHospitalisation: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/medications/sales/${editingSale.id}`, {
+      await apiClient.patch(`/api/medications/sales/${editingSale.id}`, {
         patientId: editForm.patientId,
         medicationId: editForm.medicationId,
         quantity: editForm.quantity,

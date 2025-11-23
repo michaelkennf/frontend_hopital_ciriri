@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const RHOverview: React.FC = () => {
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
@@ -13,22 +13,22 @@ const RHOverview: React.FC = () => {
       setLoading(true);
       try {
         // Employés
-        const empRes = await axios.get('/api/employees');
+        const empRes = await apiClient.get('/api/employees');
         setEmployeeCount(Array.isArray(empRes.data) ? empRes.data.length : 0);
         // Présences du jour (si API existe)
         try {
-          const attRes = await axios.get('/api/attendance');
+          const attRes = await apiClient.get('/api/attendance');
           setAttendanceCount(attRes.data?.count ?? 0);
         } catch {
           setAttendanceCount(0);
         }
         // Demandes de congé en attente
-        const leaveRes = await axios.get('/api/leave-requests');
+        const leaveRes = await apiClient.get('/api/leave-requests');
         const leaves = leaveRes.data.requests || [];
         setPendingLeaves(leaves.filter((l: any) => l.status === 'pending').length);
         // Fiches de paie à imprimer (si API existe)
         try {
-          const invRes = await axios.get('/api/invoices');
+          const invRes = await apiClient.get('/api/invoices');
           const invoices = invRes.data.invoices || [];
           setPendingPayslips(invoices.filter((i: any) => i.printed === false).length);
         } catch {

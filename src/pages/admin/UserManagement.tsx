@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface User {
   id: number;
@@ -51,7 +51,7 @@ const UserManagement: React.FC = () => {
     try {
       setLoading(true);
       console.log('Token envoyé:', localStorage.getItem('token'));
-      const response = await axios.get('/api/users');
+      const response = await apiClient.get('/api/users');
       setUsers(response.data.users || []);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erreur lors du chargement des utilisateurs');
@@ -70,7 +70,7 @@ const UserManagement: React.FC = () => {
     setAddLoading(true);
     setAddError(null);
     try {
-      await axios.post('/api/users', addForm);
+      await apiClient.post('/api/users', addForm);
       setShowAddModal(false);
       setAddForm({ email: '', password: '', role: 'admin', firstName: '', lastName: '', phone: '' });
       fetchUsers();
@@ -89,7 +89,7 @@ const UserManagement: React.FC = () => {
     setResetLoading(true);
     setResetError(null);
     try {
-      await axios.patch(`/api/users/${selectedUser.id}/reset-password`, {
+      await apiClient.patch(`/api/users/${selectedUser.id}/reset-password`, {
         newPassword: resetPassword
       });
       setShowResetModal(false);
@@ -109,7 +109,7 @@ const UserManagement: React.FC = () => {
     }
 
     try {
-      await axios.delete(`/api/users/${user.id}`);
+      await apiClient.delete(`/api/users/${user.id}`);
       fetchUsers();
       setSuccess('Utilisateur supprimé avec succès !');
     } catch (err: any) {
@@ -273,11 +273,11 @@ const UserManagement: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-gray-700 font-medium mb-2" htmlFor="email">Email *</label>
-                  <input type="email" id="email" name="email" required placeholder="exemple@hopital.com" className="input-field h-12 text-base" value={addForm.email} onChange={handleAddChange} />
+                  <input type="email" id="email" name="email" required placeholder="exemple@hopital.com" className="input-field" value={addForm.email} onChange={handleAddChange} />
                 </div>
                 <div>
                   <label className="block text-gray-700 font-medium mb-2" htmlFor="password">Mot de passe *</label>
-                  <input type="password" id="password" name="password" required placeholder="Mot de passe sécurisé" className="input-field h-12 text-base" value={addForm.password} onChange={handleAddChange} />
+                  <input type="password" id="password" name="password" required placeholder="Mot de passe sécurisé" className="input-field" value={addForm.password} onChange={handleAddChange} />
                 </div>
               </div>
               

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import jsPDF from 'jspdf';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -51,7 +51,7 @@ const LeaveRequests: React.FC = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/leave-requests');
+      const res = await apiClient.get('/api/leave-requests');
       setRequests(res.data.requests || []);
     } catch (e) {
       setRequests([]);
@@ -62,7 +62,7 @@ const LeaveRequests: React.FC = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get('/api/employees');
+      const res = await apiClient.get('/api/employees');
       setEmployees(res.data || []);
     } catch (e) {
       setEmployees([]);
@@ -92,7 +92,7 @@ const LeaveRequests: React.FC = () => {
       const days = parseInt(form.days, 10);
       const end = new Date(start);
       end.setDate(start.getDate() + (isNaN(days) ? 0 : days) - 1);
-      await axios.post('/api/leave-requests', {
+      await apiClient.post('/api/leave-requests', {
         employeeId: form.employeeId,
         startDate: form.startDate,
         endDate: end.toISOString().slice(0, 10),
@@ -118,7 +118,7 @@ const LeaveRequests: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/leave-requests/${id}/validate`, {
+      await apiClient.patch(`/api/leave-requests/${id}/validate`, {
         status,
         pdgComment: comment[id] || '',
       });

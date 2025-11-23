@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const MedicationsListMaternite: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
@@ -30,7 +30,7 @@ const MedicationsListMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=medicaments_maternite');
+      const res = await apiClient.get('/api/patients?service=medicaments_maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -39,7 +39,7 @@ const MedicationsListMaternite: React.FC = () => {
 
   const fetchMedications = async () => {
     try {
-      const res = await axios.get('/api/medications');
+      const res = await apiClient.get('/api/medications');
       setMedications(res.data.medications || []);
     } catch (e) {
       setMedications([]);
@@ -48,7 +48,7 @@ const MedicationsListMaternite: React.FC = () => {
 
   const fetchSales = async () => {
     try {
-      const res = await axios.get('/api/medications/maternite');
+      const res = await apiClient.get('/api/medications/maternite');
       setSales(res.data.sales || []);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des médicaments');
@@ -73,7 +73,7 @@ const MedicationsListMaternite: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.post('/api/medications/sales', {
+      await apiClient.post('/api/medications/sales', {
         patientId: form.patientId,
         medicationId: form.medicationId,
         quantity: form.quantity,
@@ -110,7 +110,7 @@ const MedicationsListMaternite: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/medications/sales/${editingSale.id}`, {
+      await apiClient.patch(`/api/medications/sales/${editingSale.id}`, {
         patientId: editForm.patientId,
         medicationId: editForm.medicationId,
         quantity: editForm.quantity,

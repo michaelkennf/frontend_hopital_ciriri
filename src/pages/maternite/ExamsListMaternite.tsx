@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const ExamsListMaternite: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
@@ -29,7 +29,7 @@ const ExamsListMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients?service=examens_maternite');
+      const res = await apiClient.get('/api/patients?service=examens_maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -38,7 +38,7 @@ const ExamsListMaternite: React.FC = () => {
 
   const fetchExamTypes = async () => {
     try {
-      const res = await axios.get('/api/exams');
+      const res = await apiClient.get('/api/exams');
       setExamTypes(res.data.examTypes || []);
     } catch (e) {
       setExamTypes([]);
@@ -47,7 +47,7 @@ const ExamsListMaternite: React.FC = () => {
 
   const fetchExams = async () => {
     try {
-      const res = await axios.get('/api/exams/maternite');
+      const res = await apiClient.get('/api/exams/maternite');
       setExams(res.data.exams || []);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des examens');
@@ -72,7 +72,7 @@ const ExamsListMaternite: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.post('/api/exams', {
+      await apiClient.post('/api/exams', {
         patientId: form.patientId,
         examTypeId: form.examTypeId,
         date: form.date,
@@ -106,7 +106,7 @@ const ExamsListMaternite: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/exams/${editingExam.id}`, {
+      await apiClient.patch(`/api/exams/${editingExam.id}`, {
         patientId: editForm.patientId,
         examTypeId: editForm.examTypeId,
         date: editForm.date,

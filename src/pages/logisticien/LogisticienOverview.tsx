@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const LogisticienOverview: React.FC = () => {
   const [stockCount, setStockCount] = useState<number | null>(null);
@@ -15,21 +15,21 @@ const LogisticienOverview: React.FC = () => {
       setError(null);
       try {
         // Stock total (nombre de médicaments)
-        const stockRes = await axios.get('/api/medications');
+        const stockRes = await apiClient.get('/api/medications');
         setStockCount(Array.isArray(stockRes.data) ? stockRes.data.length : (stockRes.data.medications?.length ?? 0));
         
         // Types de consultations
-        const consRes = await axios.get('/api/consultations/types');
+        const consRes = await apiClient.get('/api/consultations/types');
         console.log('Types de consultations:', consRes.data);
         setConsultationsCount(Array.isArray(consRes.data) ? consRes.data.length : (consRes.data.consultationTypes?.length ?? 0));
         
         // Types d'examens
-        const examsRes = await axios.get('/api/exams/types');
+        const examsRes = await apiClient.get('/api/exams/types');
         console.log('Types d\'examens:', examsRes.data);
         setExamsCount(Array.isArray(examsRes.data) ? examsRes.data.length : (examsRes.data.examTypes?.length ?? 0));
         
         // Demandes de fournitures en attente
-        const reqRes = await axios.get('/api/supply-requests');
+        const reqRes = await apiClient.get('/api/supply-requests');
         const requests = reqRes.data.requests || [];
         setPendingRequests(requests.filter((r: any) => r.status === 'pending').length);
       } catch (err: any) {

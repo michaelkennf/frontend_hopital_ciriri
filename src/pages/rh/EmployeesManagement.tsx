@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const functions = ['Médecin', 'Infirmier(ère)', 'Sentinelle', 'Fille de salle', 'Caissier(e)', 'Pharmacien(ne)', 'P.P', 'Laborantin(e)', 'Biologiste Médical', 'Administrateur Gestionnaire', 'Directeur de Nursing', 'Médecin Directeur', 'Médecin chef de Staff', 'Logisticien(ne)', 'Réceptionniste', 'Sage femme/Accoucheuse'];
 
@@ -29,7 +29,7 @@ const EmployeesManagement = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/employees`);
+      const response = await apiClient.get(`/api/employees`);
       setEmployees(response.data);
     } catch (error) {
       console.error('Erreur lors de la récupération des employés:', error);
@@ -53,10 +53,10 @@ const EmployeesManagement = () => {
       };
 
       if (editingEmployee) {
-        await axios.put(`/api/employees/${editingEmployee.id}`, employeeData);
+        await apiClient.put(`/api/employees/${editingEmployee.id}`, employeeData);
         setSuccess('Employé modifié avec succès !');
       } else {
-        await axios.post(`/api/employees`, employeeData);
+        await apiClient.post(`/api/employees`, employeeData);
         setSuccess('Employé enregistré avec succès !');
       }
 
@@ -90,7 +90,7 @@ const EmployeesManagement = () => {
   const handleDelete = async (id: number) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet employé ?')) {
       try {
-        await axios.delete(`/api/employees/${id}`);
+        await apiClient.delete(`/api/employees/${id}`);
         setSuccess('Employé supprimé avec succès !');
         fetchEmployees();
         setTimeout(() => setSuccess(null), 3000);

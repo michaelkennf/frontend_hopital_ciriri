@@ -1,59 +1,140 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-
-const iconClass = 'h-8 w-8 text-green-600';
+import { apiClient } from '../../utils/apiClient';
 
 const CaissierOverview: React.FC = () => {
-  const [stats, setStats] = useState({ totalPatients: 0, todayPatients: 0, lastMonthPatients: 0, totalExams: 0, todayExams: 0, lastMonthExams: 0, totalMedications: 0, todayMedications: 0, lastMonthMedications: 0, loading: true });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    todayPatients: 0,
+    lastMonthPatients: 0,
+    totalExams: 0,
+    todayExams: 0,
+    lastMonthExams: 0,
+    totalMedications: 0,
+    todayMedications: 0,
+    lastMonthMedications: 0,
+    loading: true,
+    error: null as string | null
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
-      setStats(s => ({ ...s, loading: true }));
+      setStats(prev => ({ ...prev, loading: true, error: null }));
+      
       try {
-        // Patients
-        const patientsRes = await axios.get('/api/patients');
-        const patients = patientsRes.data.patients || [];
+        console.log('🔄 Chargement des statistiques caissier...');
+        
+        // Vérifier le token
+        const token = localStorage.getItem('token');
+        console.log('🔑 Token présent:', !!token);
+        if (token) {
+          console.log('🔑 Token:', token.substring(0, 20) + '...');
+        }
+        
+        // Appels API en parallèle
+        const [patientsRes, examsRes, salesRes] = await Promise.allSettled([
+          apiClient.get('/api/patients'),
+          apiClient.get('/api/exams/realized'),
+          apiClient.get('/api/medications/sales')
+        ]);
+
         const today = new Date();
         const todayStr = today.toISOString().slice(0, 10);
         const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastMonth = lastMonthDate.getMonth();
         const lastMonthYear = lastMonthDate.getFullYear();
-        // Exams
-        const examsRes = await axios.get('/api/exams/realized');
-        const exams = examsRes.data.exams || [];
-        // Médicaments
-        const salesRes = await axios.get('/api/medications/sales');
-        const sales = salesRes.data.sales || [];
-        setStats({
+
+        // Traitement des patients
+        let patients: any[] = [];
+        if (patientsRes.status === 'fulfilled') {
+          const data = patientsRes.value.data;
+          // Gérer différentes structures de réponse
+          if (Array.isArray(data)) {
+            patients = data;
+          } else if (data.patients) {
+            patients = data.patients;
+          } else if (data.data) {
+            patients = data.data;
+          } else {
+            patients = [];
+          }
+          console.log('✅ Patients chargés:', patients.length);
+          console.log('📋 Structure patients:', Object.keys(data));
+        } else {
+          console.error('❌ Erreur patients:', patientsRes.reason);
+        }
+
+        // Traitement des examens
+        let exams: any[] = [];
+        if (examsRes.status === 'fulfilled') {
+          const data = examsRes.value.data;
+          exams = Array.isArray(data) ? data : (data.exams || []);
+          console.log('✅ Examens chargés:', exams.length);
+        } else {
+          console.error('❌ Erreur examens:', examsRes.reason);
+        }
+
+        // Traitement des ventes de médicaments
+        let sales: any[] = [];
+        if (salesRes.status === 'fulfilled') {
+          const data = salesRes.value.data;
+          sales = Array.isArray(data) ? data : (data.sales || []);
+          console.log('✅ Ventes médicaments chargées:', sales.length);
+        } else {
+          console.error('❌ Erreur ventes médicaments:', salesRes.reason);
+        }
+
+        // Calcul des statistiques
+        const newStats = {
           totalPatients: patients.length,
-          todayPatients: patients.filter((p: any) => p.createdAt && p.createdAt.slice(0, 10) === todayStr).length,
+          todayPatients: patients.filter((p: any) => {
+            const createdAt = p.createdAt || p.dateCreated;
+            return createdAt && createdAt.slice(0, 10) === todayStr;
+          }).length,
           lastMonthPatients: patients.filter((p: any) => {
-            if (!p.createdAt) return false;
-            const d = new Date(p.createdAt);
+            const createdAt = p.createdAt || p.dateCreated;
+            if (!createdAt) return false;
+            const d = new Date(createdAt);
             return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
           }).length,
           totalExams: exams.length,
-          todayExams: exams.filter((e: any) => e.date && e.date.slice(0, 10) === todayStr).length,
+          todayExams: exams.filter((e: any) => {
+            const examDate = e.date || e.createdAt;
+            return examDate && examDate.slice(0, 10) === todayStr;
+          }).length,
           lastMonthExams: exams.filter((e: any) => {
-            if (!e.date) return false;
-            const d = new Date(e.date);
+            const examDate = e.date || e.createdAt;
+            if (!examDate) return false;
+            const d = new Date(examDate);
             return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
           }).length,
           totalMedications: sales.length,
-          todayMedications: sales.filter((s: any) => s.date && s.date.slice(0, 10) === todayStr).length,
+          todayMedications: sales.filter((s: any) => {
+            const saleDate = s.date || s.createdAt;
+            return saleDate && saleDate.slice(0, 10) === todayStr;
+          }).length,
           lastMonthMedications: sales.filter((s: any) => {
-            if (!s.date) return false;
-            const d = new Date(s.date);
+            const saleDate = s.date || s.createdAt;
+            if (!saleDate) return false;
+            const d = new Date(saleDate);
             return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
           }).length,
-          loading: false
-        });
-      } catch (e: any) {
-        setStats({ totalPatients: 0, todayPatients: 0, lastMonthPatients: 0, totalExams: 0, todayExams: 0, lastMonthExams: 0, totalMedications: 0, todayMedications: 0, lastMonthMedications: 0, loading: false });
+          loading: false,
+          error: null
+        };
+
+        console.log('📊 Statistiques calculées:', newStats);
+        setStats(newStats);
+
+      } catch (error: any) {
+        console.error('❌ Erreur générale:', error);
+        setStats(prev => ({
+          ...prev,
+          loading: false,
+          error: error.message || 'Erreur lors du chargement des statistiques'
+        }));
       }
     };
+
     fetchStats();
   }, []);
 
@@ -63,8 +144,33 @@ const CaissierOverview: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Tableau de bord Caissier</h1>
         <p className="mt-1 text-sm text-gray-500">Vue d'ensemble dynamique du caissier</p>
       </div>
+
+      {/* Affichage des erreurs */}
+      {stats.error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{stats.error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {stats.loading ? (
-        <div className="text-center py-8">Chargement...</div>
+        <div className="text-center py-8">
+          <div className="inline-flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Chargement des statistiques...
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <div className="bg-white overflow-hidden shadow rounded-lg">

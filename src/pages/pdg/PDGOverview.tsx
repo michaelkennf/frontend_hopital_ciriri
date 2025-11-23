@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const PDGOverview: React.FC = () => {
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
@@ -14,7 +14,7 @@ const PDGOverview: React.FC = () => {
     const fetchStats = async () => {
       setLoading(true);
       try {
-      const res = await axios.get('/api/stats');
+      const res = await apiClient.get('/api/stats');
       setEmployeeCount(res.data.employeeCount ?? 0);
       setPatientCount(res.data.patientCount ?? 0);
       setLowStockCount(res.data.lowStockCount ?? 0);
@@ -138,13 +138,13 @@ const PDGOverview: React.FC = () => {
               </div>
             </div>
           </div>
-          <div key="stat-supply" className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5 flex items-center">
+          <div key="stat-supply" className="bg-white overflow-hidden shadow rounded-lg min-h-[120px]">
+            <div className="p-5 flex items-center h-full">
               <svg className="h-6 w-6 text-pink-400 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <div className="text-sm font-medium text-gray-500 truncate">Demandes d'approvisionnement en attente</div>
+                <div className="text-sm font-medium text-gray-500 leading-tight">Demandes d'approvisionnement en attente</div>
                 <div className="text-lg font-medium text-gray-900">{pendingSupplyRequests}</div>
               </div>
             </div>

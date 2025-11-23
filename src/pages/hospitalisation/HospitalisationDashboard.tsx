@@ -10,13 +10,13 @@ import MedicationsListHospitalisation from './MedicationsListHospitalisation';
 import HistoriqueHospitalisation from './HistoriqueHospitalisation';
 import ConsultationsListHospitalisation from './ConsultationsListHospitalisation';
 import HospitalisationsHospitalisation from './HospitalisationsHospitalisation';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 // Fonction helper pour ajouter l'authentification aux appels axios
 const authenticatedAxios = {
   get: (url: string) => {
     const token = localStorage.getItem('token');
-    return axios.get(url, {
+    return apiClient.get(url, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

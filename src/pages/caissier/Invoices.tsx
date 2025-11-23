@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface Patient {
   id: number;
@@ -37,6 +37,7 @@ const Invoices: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [printingId, setPrintingId] = useState<number | null>(null);
+  const [printedInSession, setPrintedInSession] = useState<Set<number>>(new Set());
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [search, setSearch] = useState('');
@@ -52,9 +53,25 @@ const Invoices: React.FC = () => {
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        const res = await axios.get('/api/patients');
-        setPatients(res.data.patients || []);
-      } catch (e) {
+        console.log('🔄 Chargement des patients pour les factures...');
+        const res = await apiClient.get('/api/patients');
+        console.log('📋 Réponse patients complète:', res);
+        console.log('📋 Données patients:', res.data);
+        
+        // Vérifier la structure de la réponse
+        let patientsData = [];
+        if (Array.isArray(res.data)) {
+          patientsData = res.data;
+        } else if (res.data && Array.isArray(res.data.patients)) {
+          patientsData = res.data.patients;
+        } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+          patientsData = res.data.data;
+        }
+        
+        setPatients(patientsData);
+        console.log('✅ Patients chargés:', patientsData.length);
+      } catch (e: any) {
+        console.error('❌ Erreur chargement patients:', e);
         setPatients([]);
       }
     };
@@ -65,47 +82,31 @@ const Invoices: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      console.log('[INVOICES] Token présent:', !!token);
-      console.log('[INVOICES] URL de base:', axios.defaults.baseURL);
+      console.log('🔄 Chargement des factures...');
       
       let url = '/api/invoices';
       if (patientId) url += `?patientId=${patientId}`;
-      console.log('[INVOICES] URL complète:', url);
+      console.log('📋 URL factures:', url);
       
-      let res;
-      if (token) {
-        res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      } else {
-        res = await fetch(url);
+      const res = await apiClient.get(url);
+      console.log('📋 Réponse factures complète:', res);
+      console.log('📋 Données factures:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let invoicesData = [];
+      if (Array.isArray(res.data)) {
+        invoicesData = res.data;
+      } else if (res.data && Array.isArray(res.data.invoices)) {
+        invoicesData = res.data.invoices;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        invoicesData = res.data.data;
       }
       
-      console.log('[INVOICES] Statut de la réponse:', res.status);
-      console.log('[INVOICES] Headers de la réponse:', res.headers);
-      
-      // Sécuriser le parsing JSON
-      const text = await res.text();
-      let data = {};
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch (e) {
-        console.error('[INVOICES] Erreur parsing JSON:', e);
-        console.error('[INVOICES] Réponse brute:', text);
-        data = {};
-      }
-      
-      console.log('[INVOICES] Données reçues:', data);
-      
-      if (res.ok) {
-        setInvoices((data as any).invoices || []);
-      } else {
-        // Affichage détaillé de l'erreur
-        setError(`Erreur ${res.status} : ${(data as any).error || res.statusText}`);
-      }
+      setInvoices(invoicesData);
+      console.log('✅ Factures chargées:', invoicesData.length);
     } catch (e: any) {
-      // Affichage détaillé de l'erreur réseau
-      console.error('[INVOICES] Erreur complète:', e);
-      setError(`Erreur réseau : ${e.message || e.toString()}`);
+      console.error('❌ Erreur chargement factures:', e);
+      setError(e.message || 'Erreur lors du chargement des factures');
     } finally {
       setLoading(false);
     }
@@ -114,9 +115,9 @@ const Invoices: React.FC = () => {
   const fetchPatientActs = async (patientId: number) => {
     try {
       const [consultationsRes, examsRes, salesRes] = await Promise.all([
-        axios.get(`/api/consultations?patientId=${patientId}`),
-        axios.get(`/api/exams/realized?patientId=${patientId}`),
-        axios.get(`/api/medications/sales?patientId=${patientId}`),
+        apiClient.get(`/api/consultations?patientId=${patientId}`),
+        apiClient.get(`/api/exams/realized?patientId=${patientId}`),
+        apiClient.get(`/api/medications/sales?patientId=${patientId}`),
       ]);
       setPatientConsultations(consultationsRes.data.consultations || []);
       setPatientExams(examsRes.data.exams || []);
@@ -135,23 +136,30 @@ const Invoices: React.FC = () => {
   const handlePrint = async (invoice: Invoice) => {
     setPrintingId(invoice.id);
     
-    // Logs de débogage
-    console.log('🖨️ Impression facture:', invoice);
-    console.log('📋 Items de la facture:', invoice.items);
-    console.log('💰 Montant total:', invoice.totalAmount);
-    console.log('👤 Patient:', invoice.patient);
-    
-    // Vérifier si la facture a des items
-    if (!invoice.items || invoice.items.length === 0) {
-      console.error('❌ Facture sans items - impossible d\'imprimer');
-      alert('Cette facture n\'a pas d\'éléments à imprimer.');
-      setPrintingId(null);
-      return;
-    }
-    
-    // Générer le HTML de la facture optimisé pour l'impression
-    const win = window.open('', '', 'width=400,height=800');
-    if (win) {
+    try {
+      // Logs de débogage
+      console.log('🖨️ Impression facture:', invoice);
+      console.log('📋 Items de la facture:', invoice.items);
+      console.log('💰 Montant total:', invoice.totalAmount);
+      console.log('👤 Patient:', invoice.patient);
+      
+      // Vérifier si la facture a des items
+      if (!invoice.items || invoice.items.length === 0) {
+        console.error('❌ Facture sans items - impossible d\'imprimer');
+        alert('Cette facture n\'a pas d\'éléments à imprimer.');
+        return;
+      }
+      
+      // Générer le HTML de la facture optimisé pour l'impression
+      const win = window.open('', '', 'width=400,height=800');
+      if (!win) {
+        console.error('❌ Impossible d\'ouvrir la fenêtre d\'impression');
+        alert('Impossible d\'ouvrir la fenêtre d\'impression. Vérifiez que les popups ne sont pas bloqués.');
+        return;
+      }
+      
+      console.log('✅ Fenêtre d\'impression ouverte');
+      
       win.document.write('<html><head><title>Facture</title>');
       win.document.write(`
         <style>
@@ -409,26 +417,34 @@ const Invoices: React.FC = () => {
       win.document.write('</body></html>');
       win.document.close();
       win.focus();
-      setTimeout(() => win.print(), 500);
-    }
-    
-    // Marquer la facture comme imprimée côté backend
-    try {
-      await axios.patch(`/api/invoices/${invoice.id}/print`);
+      
+      console.log('✅ HTML généré, lancement de l\'impression...');
+      setTimeout(() => {
+        win.print();
+        console.log('✅ Impression lancée');
+      }, 500);
+      
+      // Marquer la facture comme imprimée côté backend et dans la session
+      console.log('🔄 Marquage de la facture comme imprimée...');
+      const printResponse = await apiClient.patch(`/api/invoices/${invoice.id}/print`);
+      console.log('✅ Facture marquée comme imprimée côté backend');
+      console.log('📊 Réponse backend:', printResponse.data);
+      
+      if (printResponse.data.statusChanged) {
+        console.log(`✅ Statut changé de "pending" à "${printResponse.data.newStatus}"`);
+      }
+      
+      // Ajouter à l'état local pour masquer immédiatement le bouton
+      setPrintedInSession(prev => new Set(prev).add(invoice.id));
+      console.log('✅ Facture ajoutée à l\'état de session');
+      
       // Rafraîchir la liste
-      const token = localStorage.getItem('token');
-      let res;
-      if (token) {
-        res = await fetch('/api/invoices', { headers: { Authorization: `Bearer ${token}` } });
-      } else {
-        res = await fetch('/api/invoices');
-      }
-      const data = await res.json();
-      if (res.ok) {
-        setInvoices(data.invoices);
-      }
-    } catch (e) {
-      console.error('Erreur lors du marquage comme imprimée:', e);
+      await fetchInvoices(selectedPatientId);
+      console.log('✅ Liste des factures rafraîchie');
+      
+    } catch (error: any) {
+      console.error('❌ Erreur lors de l\'impression:', error);
+      alert(`Erreur lors de l'impression: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setPrintingId(null);
     }
@@ -451,7 +467,7 @@ const Invoices: React.FC = () => {
     setEditLoading(true);
     setEditError(null);
     try {
-      await axios.patch(`/api/invoices/${editInvoice!.id}`, {
+      await apiClient.patch(`/api/invoices/${editInvoice!.id}`, {
         items: editItems.map(({ id, ...rest }) => rest),
         totalAmount: editTotal
       });
@@ -560,7 +576,7 @@ const Invoices: React.FC = () => {
           onChange={e => setSelectedPatientId(e.target.value)}
         >
           <option value="">Tous les patients</option>
-          {patients.map(p => (
+          {Array.isArray(patients) && patients.map(p => (
             <option key={p.id} value={p.id}>
               {p.folderNumber} - {p.lastName.toUpperCase()} {p.firstName}
             </option>
@@ -568,7 +584,7 @@ const Invoices: React.FC = () => {
         </select>
         <input
           type="text"
-          className="input-field ml-2"
+          className="input-field"
           placeholder="Rechercher une facture (numéro, nom, dossier...)"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -625,7 +641,7 @@ const Invoices: React.FC = () => {
                           {inv.printed ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}
                         </td>
                         <td className="px-4 py-2 space-x-2">
-                          {!inv.printed && (
+                          {!inv.printed && !printedInSession.has(inv.id) && (
                             <>
                               <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" title="Modifier" onClick={() => handleEdit(inv)}>
                                 Modifier
@@ -634,6 +650,11 @@ const Invoices: React.FC = () => {
                                 {printingId === inv.id ? 'Impression...' : 'Imprimer'}
                               </button>
                             </>
+                          )}
+                          {(inv.printed || printedInSession.has(inv.id)) && (
+                            <span className="text-green-600 font-bold text-sm">
+                              ✅ Facture imprimée
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -692,7 +713,7 @@ const Invoices: React.FC = () => {
                           {inv.printed ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}
                         </td>
                         <td className="px-4 py-2 space-x-2">
-                          {!inv.printed && (
+                          {!inv.printed && !printedInSession.has(inv.id) && (
                             <>
                               <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" title="Modifier" onClick={() => handleEdit(inv)}>
                                 Modifier
@@ -701,6 +722,11 @@ const Invoices: React.FC = () => {
                                 {printingId === inv.id ? 'Impression...' : 'Imprimer'}
                               </button>
                             </>
+                          )}
+                          {(inv.printed || printedInSession.has(inv.id)) && (
+                            <span className="text-green-600 font-bold text-sm">
+                              ✅ Facture imprimée
+                            </span>
                           )}
                         </td>
                       </tr>

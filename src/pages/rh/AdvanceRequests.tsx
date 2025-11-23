@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import jsPDF from 'jspdf';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -48,7 +48,7 @@ const AdvanceRequests: React.FC = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/advance-requests');
+      const res = await apiClient.get('/api/advance-requests');
       console.log('Réponse API advance-requests:', res.data);
       // Vérifier si les données sont dans res.data ou res.data.requests
       const requestsData = Array.isArray(res.data) ? res.data : (res.data.requests || []);
@@ -63,7 +63,7 @@ const AdvanceRequests: React.FC = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get('/api/employees');
+      const res = await apiClient.get('/api/employees');
       console.log('Réponse API employees:', res.data);
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
@@ -95,7 +95,7 @@ const AdvanceRequests: React.FC = () => {
         amount: parseFloat(form.amount),
         reason: form.reason,
       });
-      await axios.post('/api/advance-requests', {
+      await apiClient.post('/api/advance-requests', {
         employeeId: form.employeeId,
         amount: parseFloat(form.amount),
         reason: form.reason,
@@ -121,7 +121,7 @@ const AdvanceRequests: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/advance-requests/${id}/validate`, {
+      await apiClient.patch(`/advance-requests/${id}/validate`, {
         status,
         pdgComment: comment[id] || '',
       });

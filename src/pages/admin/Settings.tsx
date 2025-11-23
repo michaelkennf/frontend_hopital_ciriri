@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 const Settings: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -33,7 +33,7 @@ const Settings: React.FC = () => {
     setSuccess(null);
 
     try {
-      const response = await axios.patch('/api/users/profile/password', {
+      const response = await apiClient.patch('/api/users/profile/password', {
         currentPassword,
         newPassword
       });

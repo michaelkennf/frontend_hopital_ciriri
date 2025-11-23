@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -33,12 +33,12 @@ const FinancialDashboard: React.FC = () => {
       console.log('[FINANCIAL] Début de la récupération des données financières');
       
       // Invoices (entrées) - récupérer toutes les factures payées ou imprimées
-      const invRes = await axios.get('/api/invoices');
+      const invRes = await apiClient.get('/api/invoices');
       const invoices = invRes.data.invoices || [];
       console.log('[FINANCIAL] Factures récupérées:', invoices.length);
       
       // Supply Requests (sorties)
-      const reqRes = await axios.get('/api/supply-requests');
+      const reqRes = await apiClient.get('/api/supply-requests');
       const supplyRequests = reqRes.data.requests || [];
       console.log('[FINANCIAL] Demandes d\'approvisionnement récupérées:', supplyRequests.length);
       

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface User {
   id: number;
@@ -153,7 +153,7 @@ const LogsViewer: React.FC = () => {
         if (filterRole) params.append('role', filterRole);
         if (filterDate) params.append('date', filterDate);
 
-        const res = await axios.get(`/api/logs?${params}`);
+        const res = await apiClient.get(`/api/logs?${params}`);
         setLogs(res.data.logs);
         setTotalPages(res.data.pagination.totalPages);
         setTotalLogs(res.data.pagination.totalLogs);

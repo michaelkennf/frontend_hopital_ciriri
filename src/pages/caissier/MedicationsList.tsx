@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 import jsPDF from 'jspdf';
 
 interface Patient {
@@ -61,8 +61,21 @@ const MedicationsList: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await axios.get('/api/patients');
-      setPatients(res.data.patients || []);
+      const res = await apiClient.get('/api/patients');
+      console.log('📋 Réponse patients MedicationsList:', res.data);
+      
+      // Vérifier la structure de la réponse
+      let patientsData = [];
+      if (Array.isArray(res.data)) {
+        patientsData = res.data;
+      } else if (res.data && Array.isArray(res.data.patients)) {
+        patientsData = res.data.patients;
+      } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+        patientsData = res.data.data;
+      }
+      
+      setPatients(patientsData);
+      console.log('✅ Patients chargés dans MedicationsList:', patientsData.length);
     } catch (e) {
       setPatients([]);
     }
@@ -70,7 +83,7 @@ const MedicationsList: React.FC = () => {
 
   const fetchMedications = async () => {
     try {
-      const res = await axios.get('/api/medications');
+      const res = await apiClient.get('/api/medications');
       setMedications(res.data.medications || []);
     } catch (e) {
       setMedications([]);
@@ -80,7 +93,7 @@ const MedicationsList: React.FC = () => {
   const fetchSales = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/medications/sales');
+      const res = await apiClient.get('/api/medications/sales');
       setSales(res.data.sales || []);
     } catch (e) {
       setSales([]);
@@ -91,7 +104,7 @@ const MedicationsList: React.FC = () => {
 
   const fetchFacturedSales = async () => {
     try {
-      const res = await axios.get('/api/invoices');
+      const res = await apiClient.get('/api/invoices');
       const salesIds: number[] = [];
       for (const invoice of res.data.invoices || []) {
         for (const item of invoice.items || []) {
@@ -124,7 +137,7 @@ const MedicationsList: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.post('/api/medications/sales', {
+      await apiClient.post('/api/medications/sales', {
         patientId: form.patientId,
         medicationId: form.medicationId,
         quantity: form.quantity,
@@ -163,7 +176,7 @@ const MedicationsList: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.patch(`/api/medications/sales/${editingSale.id}`, {
+      await apiClient.patch(`/api/medications/sales/${editingSale.id}`, {
         patientId: editForm.patientId,
         medicationId: editForm.medicationId,
         quantity: editForm.quantity,
@@ -225,7 +238,7 @@ const MedicationsList: React.FC = () => {
   const handlePrintInvoice = async (sale: Sale) => {
     try {
       // Appel API pour créer la facture
-      await axios.post(`/api/medications/sales/${sale.id}/facture`);
+      await apiClient.post(`/api/medications/sales/${sale.id}/facture`);
       setTimeout(fetchFacturedSales, 400); // Rafraîchir la liste des ventes facturées après impression
     } catch (e) {
       // ignore
@@ -464,7 +477,7 @@ const MedicationsList: React.FC = () => {
       </div>
       <input
         type="text"
-        className="input-field mb-4"
+        className="input-field"
         placeholder="Rechercher un patient (nom ou dossier)"
         value={search}
         onChange={e => setSearch(e.target.value)}
@@ -527,7 +540,7 @@ const MedicationsList: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Patient</label>
                 <input
                   type="text"
-                  className="input-field mb-1"
+                  className="input-field"
                   placeholder="Rechercher un patient..."
                   value={patientSearch}
                   onChange={e => setPatientSearch(e.target.value)}
@@ -554,7 +567,7 @@ const MedicationsList: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Médicament</label>
                 <input
                   type="text"
-                  className="input-field mb-1"
+                  className="input-field"
                   placeholder="Rechercher un médicament..."
                   value={medicationSearch}
                   onChange={e => setMedicationSearch(e.target.value)}
@@ -626,7 +639,7 @@ const MedicationsList: React.FC = () => {
                   name="patientId"
                   value={editForm.patientId}
                   onChange={handleEditChange}
-                  className="input w-full"
+                  className="input-field"
                   required
                 >
                   <option value="">Sélectionner un patient</option>
@@ -641,7 +654,7 @@ const MedicationsList: React.FC = () => {
                   name="medicationId"
                   value={editForm.medicationId}
                   onChange={handleEditChange}
-                  className="input w-full"
+                  className="input-field"
                   required
                 >
                   <option value="">Sélectionner un médicament</option>
@@ -657,7 +670,7 @@ const MedicationsList: React.FC = () => {
                   name="quantity"
                   value={editForm.quantity}
                   onChange={handleEditChange}
-                  className="input w-full"
+                  className="input-field"
                   required
                 />
               </div>
@@ -668,7 +681,7 @@ const MedicationsList: React.FC = () => {
                   name="date"
                   value={editForm.date}
                   onChange={handleEditChange}
-                  className="input w-full"
+                  className="input-field"
                   required
                 />
               </div>

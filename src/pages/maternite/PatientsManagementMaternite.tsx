@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 function calculateAge(dateNaissance: string) {
   if (!dateNaissance) return '';
@@ -48,7 +48,7 @@ const PatientsManagementMaternite: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/patients?service=maternite');
+      const res = await apiClient.get('/api/patients?service=maternite');
       setPatients(res.data.patients || []);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des patients maternité');
@@ -59,7 +59,7 @@ const PatientsManagementMaternite: React.FC = () => {
 
   const fetchRoomTypes = async () => {
     try {
-      const res = await axios.get('/api/room-types');
+      const res = await apiClient.get('/api/room-types');
       setRoomTypes(res.data.roomTypes || []);
     } catch (error: any) {
       console.error('Erreur lors du chargement des types de chambres:', error);
@@ -92,7 +92,7 @@ const PatientsManagementMaternite: React.FC = () => {
     
     try {
       // 1. Créer le patient
-      const res = await axios.post('/api/patients', {
+      const res = await apiClient.post('/api/patients', {
         firstName: form.nom,
         lastName: form.postNom,
         sexe: form.sexe,
@@ -105,7 +105,7 @@ const PatientsManagementMaternite: React.FC = () => {
       const patientId = res.data.patient?.id || res.data.id;
       
       // 2. Hospitaliser immédiatement avec le type de chambre sélectionné
-      const hospitalizationRes = await axios.post('/api/hospitalizations', {
+      const hospitalizationRes = await apiClient.post('/api/hospitalizations', {
         patientId: patientId,
         roomTypeId: parseInt(form.roomType),
         entryDate: form.entryDate, // Utiliser la date d'entrée saisie par l'utilisateur
@@ -325,7 +325,7 @@ const PatientsManagementMaternite: React.FC = () => {
               setEditError(null);
               setEditSuccess(null);
               try {
-                await axios.patch(`/api/patients/${editForm.id}`, {
+                await apiClient.patch(`/api/patients/${editForm.id}`, {
                   firstName: editForm.nom,
                   lastName: editForm.postNom,
                   gender: editForm.sexe,

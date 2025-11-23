@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
 interface Backup {
   filename: string;
@@ -19,7 +19,7 @@ const DatabaseBackup: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get('/api/backup');
+      const res = await apiClient.get('/api/backup');
       setBackups(res.data.backups || []);
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des sauvegardes');
@@ -37,7 +37,7 @@ const DatabaseBackup: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.post('/api/backup');
+      await apiClient.post('/api/backup');
       setSuccess('Sauvegarde créée avec succès !');
       fetchBackups();
     } catch (e: any) {
@@ -56,7 +56,7 @@ const DatabaseBackup: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await axios.delete(`/api/backup/${backup.filename}`);
+      await apiClient.delete(`/api/backup/${backup.filename}`);
       setSuccess('Sauvegarde supprimée avec succès !');
       fetchBackups();
     } catch (e: any) {

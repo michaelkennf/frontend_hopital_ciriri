@@ -1,47 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../utils/apiClient';
 
-// Configuration axios avec authentification
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000'
-});
+// Configuration API avec authentification
 
-// Intercepteur pour ajouter automatiquement le token d'authentification
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    console.log('🔐 Intercepteur de requête - Token trouvé:', token ? 'OUI' : 'NON');
-    console.log('🔐 URL de la requête:', config.url);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔐 Header Authorization ajouté:', `Bearer ${token.substring(0, 20)}...`);
-    } else {
-      console.log('⚠️ Aucun token trouvé dans localStorage');
-    }
-    return config;
-  },
-  (error) => {
-    console.error('❌ Erreur dans l\'intercepteur de requête:', error);
-    return Promise.reject(error);
-  }
-);
+// Les intercepteurs sont maintenant gérés par apiClient
 
-// Intercepteur pour gérer les erreurs d'authentification
-api.interceptors.response.use(
-  (response) => {
-    console.log('✅ Réponse reçue avec succès:', response.config.url);
-    return response;
-  },
-  (error) => {
-    console.error('❌ Erreur de réponse:', error.config?.url, 'Status:', error.response?.status);
-    if (error.response?.status === 401) {
-      console.error('🔐 Erreur d\'authentification détectée');
-      console.error('🔐 Headers de la requête:', error.config?.headers);
-      console.error('🔐 Token dans localStorage:', localStorage.getItem('token') ? 'PRÉSENT' : 'ABSENT');
-    }
-    return Promise.reject(error);
-  }
-);
+// Les intercepteurs sont maintenant gérés par apiClient
 
 interface Medication {
   id: number;
@@ -135,7 +99,7 @@ const SupplyRequests: React.FC = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await api.get('/api/supply-requests');
+      const response = await apiClient.get('/apiClient/supply-requests');
       setRequests(response.data.requests || []);
     } catch (error) {
       console.error('Erreur lors de la récupération des demandes:', error);
@@ -144,7 +108,7 @@ const SupplyRequests: React.FC = () => {
 
   const fetchMedications = async () => {
     try {
-      const response = await api.get('/api/medications');
+      const response = await apiClient.get('/apiClient/medications');
       console.log('=== DONNÉES MÉDICAMENTS API ===');
       console.log('Réponse complète:', response.data);
       console.log('Médicaments reçus:', response.data.medications);
@@ -242,7 +206,7 @@ const SupplyRequests: React.FC = () => {
 
   const handleAddMedication = async () => {
     try {
-      const response = await api.post('/api/medications', {
+      const response = await apiClient.post('/apiClient/medications', {
         name: newMedication.name,
         quantity: 0,
         minQuantity: 0,
@@ -295,7 +259,7 @@ const SupplyRequests: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await api.delete(`/api/supply-requests/${id}`);
+      await apiClient.delete(`/apiClient/supply-requests/${id}`);
       setSuccess('Demande supprimée avec succès !');
       setRequests(requests.filter(r => r.id !== id));
     } catch (error: any) {
@@ -400,12 +364,12 @@ const SupplyRequests: React.FC = () => {
       
       if (editRequest) {
         console.log('Mode édition - PATCH');
-        const response = await api.patch(`/api/supply-requests/${editRequest.id}`, requestData);
+        const response = await apiClient.patch(`/apiClient/supply-requests/${editRequest.id}`, requestData);
         console.log('Réponse PATCH:', response.data);
         setSuccess('Demande modifiée avec succès !');
       } else {
         console.log('Mode création - POST');
-        const response = await api.post('/api/supply-requests', requestData);
+        const response = await apiClient.post('/apiClient/supply-requests', requestData);
         console.log('Réponse POST:', response.data);
         setSuccess('Demande d\'approvisionnement créée avec succès !');
       }
@@ -443,7 +407,7 @@ const SupplyRequests: React.FC = () => {
 
   const handleApprove = async (requestId: number) => {
     try {
-      await api.patch(`/api/supply-requests/${requestId}/approve`);
+      await apiClient.patch(`/apiClient/supply-requests/${requestId}/approve`);
       setSuccess('Demande approuvée avec succès !');
       fetchRequests();
     } catch (error: any) {
