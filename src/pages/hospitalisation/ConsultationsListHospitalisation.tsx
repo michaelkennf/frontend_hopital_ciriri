@@ -52,7 +52,7 @@ const ConsultationsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await apiClient.get('/api/patients?service=consultations_hospitalisation');
+      const res = await apiClient.get('/api/patients?service=hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -71,7 +71,8 @@ const ConsultationsListHospitalisation: React.FC = () => {
   const fetchConsultations = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/api/consultations');
+      // Utiliser la route spécifique à l'hospitalisation
+      const res = await apiClient.get('/api/consultations/hospitalisation');
       const consultationsData = res.data.consultations || [];
       
       console.log('🔍 Données reçues de l\'API:', res.data);
@@ -346,50 +347,6 @@ const ConsultationsListHospitalisation: React.FC = () => {
       <p className="text-gray-600 mb-6">Consultez la liste des consultations pour les patients hospitalisés.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
-      
-      {/* Composant de débogage pour les erreurs de données */}
-      {consultations.length > 0 && consultations.some(c => !c.patient || !c.patient.folderNumber) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
-          <h3 className="font-semibold mb-2">⚠️ Données incomplètes détectées</h3>
-          <p className="text-sm">
-            Certaines consultations ont des données de patient manquantes. 
-            Ces consultations ne seront pas affichées dans la liste.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {consultations.filter(c => !c.patient || !c.patient.folderNumber).map((c, index) => (
-                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
-                  Consultation ID: {c.id} - Patient: {c.patient ? `ID ${c.patient.id}` : 'undefined'} - 
-                  folderNumber: {c.patient?.folderNumber || 'undefined'}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
-      
-      {/* Composant de débogage pour les types de consultation */}
-      {consultations.length > 0 && consultations.some(c => !c.consultationType || !c.consultationType.name) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
-          <h3 className="font-semibold mb-2">⚠️ Types de consultation manquants</h3>
-          <p className="text-sm">
-            Certaines consultations ont des types manquants ou invalides. 
-            Ces consultations peuvent afficher "N/A" dans la colonne Type.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {consultations.filter(c => !c.consultationType || !c.consultationType.name).map((c, index) => (
-                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
-                  Consultation ID: {c.id} - Type: {c.consultationType ? `ID ${c.consultationType.id}` : 'undefined'} - 
-                  Nom: {c.consultationType?.name || 'undefined'}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
       
       <div className="card mb-6" ref={tableRef}>
         {loading ? (

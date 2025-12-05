@@ -6,8 +6,8 @@ compatibility_date = "2024-01-01"
 pages_build_output_dir = "./dist"
 
 [env.production]
-  # URL du backend via Caddy
-  VITE_API_URL = "https://api.polyclinique.fikiri.org/api"
+  # URL du backend via Caddy (sans /api car le sous-domaine pointe déjà vers le backend)
+  VITE_API_URL = "https://api.polyclinique.fikiri.org"
 
 [env.preview]
   # URL du backend local pour le développement

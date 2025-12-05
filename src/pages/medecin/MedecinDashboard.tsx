@@ -157,9 +157,11 @@ function PatientsDossiers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [consultationTypes, setConsultationTypes] = useState<any[]>([]);
+  const [examTypes, setExamTypes] = useState<any[]>([]);
   const [newConsultation, setNewConsultation] = useState({ typeId: '', notes: '' });
   const [addingConsultation, setAddingConsultation] = useState(false);
   const [treatmentForms, setTreatmentForms] = useState<{ [consultationId: number]: { medicationName: string; notes: string; loading: boolean; visible: boolean } }>({});
+  const [examForms, setExamForms] = useState<{ [consultationId: number]: { examTypeId: string; results: string; loading: boolean; visible: boolean } }>({});
   
   // États pour la modification des notes de consultation
   const [editingConsultationId, setEditingConsultationId] = useState<number | null>(null);
@@ -183,14 +185,9 @@ function PatientsDossiers() {
     return today === consultationDay;
   };
 
-  // Fonction pour vérifier si une consultation peut être modifiée (dans les 5 minutes)
+  // Fonction pour vérifier si une consultation peut être modifiée (seulement le jour même)
   const canEditConsultation = (consultation: any) => {
-    const now = new Date();
-    const updatedAt = new Date(consultation.updatedAt || consultation.date);
-    const timeDifference = now.getTime() - updatedAt.getTime();
-    const fiveMinutesInMs = 5 * 60 * 1000; // 5 minutes en millisecondes
-    
-    return timeDifference <= fiveMinutesInMs;
+    return isConsultationToday(consultation.date);
   };
 
   // Fonction pour commencer la modification des notes
@@ -230,7 +227,7 @@ function PatientsDossiers() {
     } catch (error: any) {
       console.error('Erreur lors de la modification:', error);
       if (error.response?.status === 403) {
-        setError('La période de modification (5 minutes) est expirée.');
+        setError(error.response?.data?.error || 'Les modifications ne sont autorisées que le jour même de la consultation.');
       } else {
         setError(error.response?.data?.error || 'Erreur lors de la modification des notes');
       }
@@ -285,27 +282,53 @@ function PatientsDossiers() {
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
     setLoading(true);
+    setError(null);
+    // Initialiser un dossier vide en cas d'erreur
+    const emptyDossier = {
+      patient: patient,
+      consultations: [],
+      exams: [],
+      medications: [],
+      acts: [],
+      hospitalizations: [],
+      invoices: []
+    };
+    
     apiClient.get(`/api/patients/${patient.id}/dossier`)
       .then(res => {
-        setDossier(res.data);
+        // S'assurer que res.data existe et contient au moins les listes vides
+        const dossierData = res.data || emptyDossier;
+        setDossier({
+          ...emptyDossier,
+          ...dossierData,
+          // S'assurer que toutes les listes existent
+          consultations: dossierData.consultations || [],
+          exams: dossierData.exams || [],
+          medications: dossierData.medications || [],
+          acts: dossierData.acts || [],
+          hospitalizations: dossierData.hospitalizations || [],
+          invoices: dossierData.invoices || [],
+          patient: dossierData.patient || patient
+        });
         
         // Chercher la consultation la plus récente (aujourd'hui ou la plus récente)
         const today = new Date().toISOString().slice(0, 10);
         let selectedConsultation = null;
         
-        if (res.data.consultations && res.data.consultations.length > 0) {
+        const consultations = dossierData.consultations || [];
+        if (consultations.length > 0) {
           // D'abord chercher une consultation d'aujourd'hui
-          selectedConsultation = res.data.consultations.find((c: any) => 
-            c.date?.slice(0, 10) === today
+          selectedConsultation = consultations.find((c: any) => 
+            c.date && c.date.slice(0, 10) === today
           );
           
           // Si pas de consultation aujourd'hui, prendre la plus récente
           if (!selectedConsultation) {
-            selectedConsultation = res.data.consultations[0]; // La plus récente (triée par date desc)
+            selectedConsultation = consultations[0]; // La plus récente (triée par date desc)
           }
         }
         
-        if (selectedConsultation) {
+        if (selectedConsultation && selectedConsultation.consultation) {
           console.log('Consultation sélectionnée à la caisse:', selectedConsultation);
           setNewConsultation(prev => ({
             ...prev,
@@ -316,16 +339,27 @@ function PatientsDossiers() {
           setNewConsultation({ typeId: '', notes: '' });
         }
       })
-      .catch(() => setError('Erreur lors du chargement du dossier patient'))
+      .catch((err) => {
+        console.error('Erreur lors du chargement du dossier:', err);
+        // Même en cas d'erreur, initialiser un dossier vide pour permettre l'affichage
+        setDossier(emptyDossier);
+        setError('Erreur lors du chargement du dossier patient. Le dossier est disponible mais certaines données peuvent être manquantes.');
+      })
       .finally(() => setLoading(false));
   };
 
-  // Charger les types de consultation quand un patient est sélectionné
+  // Charger les types de consultation et d'examens quand un patient est sélectionné
   useEffect(() => {
     if (selectedPatient) {
-      apiClient.get('/api/consultations/types')
-        .then(res => setConsultationTypes(res.data.consultationTypes))
-        .catch(() => setError('Erreur lors du chargement des types de consultation'));
+      Promise.all([
+        apiClient.get('/api/consultations/types'),
+        apiClient.get('/api/exams/types')
+      ])
+        .then(([consultationsRes, examsRes]) => {
+          setConsultationTypes(consultationsRes.data.consultationTypes || []);
+          setExamTypes(examsRes.data.examTypes || []);
+        })
+        .catch(() => setError('Erreur lors du chargement des types'));
     }
   }, [selectedPatient]);
 
@@ -401,6 +435,90 @@ function PatientsDossiers() {
         visible: !forms[consultationId]?.visible
       }
     }));
+  };
+
+  // Initialiser un formulaire d'examen fermé
+  const initializeExamForm = (consultationId: number) => {
+    setExamForms(forms => ({
+      ...forms,
+      [consultationId]: {
+        examTypeId: '',
+        results: '',
+        loading: false,
+        visible: false
+      }
+    }));
+  };
+
+  // Gérer la saisie du formulaire d'examen pour chaque consultation
+  const handleExamChange = (consultationId: number, field: string, value: string) => {
+    setExamForms(forms => ({
+      ...forms,
+      [consultationId]: {
+        ...forms[consultationId],
+        [field]: value
+      }
+    }));
+  };
+
+  // Afficher/masquer le formulaire d'examen
+  const toggleExamForm = (consultationId: number, consultationDate: string) => {
+    // Empêcher l'ouverture du formulaire pour les consultations passées
+    if (!isConsultationToday(consultationDate)) {
+      return;
+    }
+    
+    // Initialiser le formulaire s'il n'existe pas encore
+    if (!examForms[consultationId]) {
+      initializeExamForm(consultationId);
+    }
+    
+    setExamForms(forms => ({
+      ...forms,
+      [consultationId]: {
+        ...forms[consultationId],
+        visible: !forms[consultationId]?.visible
+      }
+    }));
+  };
+
+  // Ajouter un examen à une consultation
+  const handleAddExam = async (consultationId: number, consultationDate: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const form = examForms[consultationId];
+    if (!form || !form.examTypeId || !selectedPatient) return;
+    
+    setExamForms(forms => ({ ...forms, [consultationId]: { ...form, loading: true } }));
+    setError(null);
+    
+    try {
+      await apiClient.post('/api/exams', {
+        patientId: selectedPatient.id,
+        examTypeId: form.examTypeId,
+        date: consultationDate,
+        results: form.results || null
+      });
+      
+      // Rafraîchir le dossier
+      if (selectedPatient) {
+        const dossierRes = await apiClient.get(`/api/patients/${selectedPatient.id}/dossier`);
+        setDossier(dossierRes.data);
+      }
+      
+      setExamForms(forms => ({ 
+        ...forms, 
+        [consultationId]: { 
+          examTypeId: '', 
+          results: '', 
+          loading: false,
+          visible: false 
+        } 
+      }));
+    } catch (err: any) {
+      console.error('Erreur lors de l\'ajout de l\'examen:', err);
+      setError(err.response?.data?.error || "Erreur lors de l'ajout de l'examen");
+      setExamForms(forms => ({ ...forms, [consultationId]: { ...form, loading: false } }));
+    }
   };
 
   // Ajouter un traitement à une consultation
@@ -521,9 +639,21 @@ function PatientsDossiers() {
           </div>
         </div>
           {/* Dossier de patient sélectionné */}
-      {selectedPatient && dossier ? (
+      {selectedPatient ? (
             <div className="lg:col-span-2">
           <h2 className="font-semibold text-lg mb-2">Dossier de {selectedPatient.lastName} {selectedPatient.firstName}</h2>
+              
+              {/* Affichage des erreurs */}
+              {error && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-700 text-sm">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>{error}</span>
+                  </div>
+                </div>
+              )}
               
               {/* Informations du patient */}
               <div className="mb-6 p-4 bg-gray-50 rounded border">
@@ -594,6 +724,12 @@ function PatientsDossiers() {
           </form>
           <div className="mb-4">
                 <h3 className="font-semibold mb-3">Historique médical</h3>
+                {(dossier?.consultations ?? []).length === 0 ? (
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded text-center text-gray-600">
+                    <p className="mb-2">Aucune consultation enregistrée pour ce patient.</p>
+                    <p className="text-sm">Le dossier est disponible. Vous pouvez ajouter une consultation ci-dessus.</p>
+                  </div>
+                ) : (
                 <ul className="space-y-4">
                   {(dossier?.consultations ?? []).map((c: Consultation) => (
                     <li key={c.id} className="p-4 bg-white border rounded shadow-sm">
@@ -614,7 +750,7 @@ function PatientsDossiers() {
                               </svg>
                               <strong className="text-yellow-800 text-sm">Signes et maladies :</strong>
                             </div>
-                            {/* Bouton modifier (visible seulement dans les 5 minutes) */}
+                            {/* Bouton modifier (visible seulement le jour même) */}
                             {canEditConsultation(c) && editingConsultationId !== c.id && (
                               <button
                                 onClick={() => handleStartEditNotes(c)}
@@ -655,6 +791,78 @@ function PatientsDossiers() {
                             <p className="text-sm text-gray-700 ml-6 whitespace-pre-wrap">{c.notes}</p>
                           )}
                         </div>
+                      )}
+                      
+                      {/* Formulaire ajout examen - seulement pour les consultations du jour */}
+                      {isConsultationToday(c.date) && (
+                        examForms[c.id]?.visible ? (
+                          <form className="mb-3 p-3 bg-purple-50 rounded border" onSubmit={e => handleAddExam(c.id, c.date, e)}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <svg className="w-4 h-4 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                <span className="text-sm font-medium text-gray-700">Ajouter un examen :</span>
+                              </div>
+                              <button 
+                                type="button" 
+                                onClick={() => toggleExamForm(c.id, c.date)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              <select
+                                className="input-field w-full"
+                                value={examForms[c.id]?.examTypeId || ''}
+                                onChange={e => handleExamChange(c.id, 'examTypeId', e.target.value)}
+                                required
+                              >
+                                <option value="">Sélectionner un type d'examen</option>
+                                {examTypes.map(examType => (
+                                  <option key={examType.id} value={examType.id}>
+                                    {examType.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <textarea
+                                className="input-field w-full"
+                                placeholder="Résultats de l'examen (optionnel - peut être ajouté plus tard par le laborantin)"
+                                value={examForms[c.id]?.results || ''}
+                                onChange={e => handleExamChange(c.id, 'results', e.target.value)}
+                                rows={3}
+                              />
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              <button type="submit" className="btn-primary btn-xs" disabled={examForms[c.id]?.loading}>
+                                {examForms[c.id]?.loading ? 'Ajout...' : 'Ajouter examen'}
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => toggleExamForm(c.id, c.date)}
+                                className="btn-secondary btn-xs"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="mb-3">
+                            <button 
+                              type="button" 
+                              onClick={() => toggleExamForm(c.id, c.date)}
+                              className="flex items-center text-purple-600 hover:text-purple-800 text-sm"
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              </svg>
+                              Ajouter un examen
+                            </button>
+                          </div>
+                        )
                       )}
                       
                       {/* Traitements prescrits */}
@@ -789,6 +997,7 @@ function PatientsDossiers() {
                 </li>
               ))}
             </ul>
+                )}
           </div>
         </div>
       ) : (

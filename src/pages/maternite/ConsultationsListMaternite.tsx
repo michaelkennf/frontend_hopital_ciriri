@@ -52,7 +52,7 @@ const ConsultationsListMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await apiClient.get('/api/patients?service=consultations_maternite');
+      const res = await apiClient.get('/api/patients?service=maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -259,29 +259,6 @@ const ConsultationsListMaternite: React.FC = () => {
       <p className="text-gray-600 mb-6">Consultez la liste des consultations pour les patientes maternité.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-400 text-green-700 rounded-md p-4 mb-4">{success}</div>}
-      
-      {/* Composant de débogage pour les consultations invalides */}
-      {consultations.length > 0 && consultations.some(c => !c.patient || !c.consultationType) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
-          <h3 className="font-semibold mb-2">⚠️ Consultations avec données manquantes détectées</h3>
-          <p className="text-sm">
-            Certaines consultations ont des données patient ou type de consultation manquantes. 
-            Elles ont été exclues de l'affichage pour éviter les erreurs.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {consultations.filter(c => !c.patient || !c.consultationType).map((c, index) => (
-                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
-                  Consultation ID: {c.id} - 
-                  Patient: {c.patient ? `${c.patient.folderNumber || 'N/A'} (${c.patient.firstName || 'N/A'} ${c.patient.lastName || 'N/A'})` : 'Manquant'} - 
-                  Type: {c.consultationType ? c.consultationType.name : 'Manquant'}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
       
       <div className="card mb-6" ref={tableRef}>
         {loading ? (

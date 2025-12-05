@@ -30,7 +30,7 @@ const MedicationsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await apiClient.get('/api/patients?service=medicaments_hospitalisation');
+      const res = await apiClient.get('/api/patients?service=hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -282,50 +282,6 @@ const MedicationsListHospitalisation: React.FC = () => {
       {success && (
         <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
           {success}
-        </div>
-      )}
-      
-      {/* Composant de débogage pour les erreurs de données */}
-      {sales.length > 0 && sales.some(s => !s.patient || !s.patient.folderNumber) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
-          <h3 className="font-semibold mb-2">⚠️ Données incomplètes détectées</h3>
-          <p className="text-sm">
-            Certaines ventes ont des données de patient manquantes. 
-            Ces ventes ne seront pas affichées dans la liste.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {sales.filter(s => !s.patient || !s.patient.folderNumber).map((s, index) => (
-                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
-                  Vente ID: {s.id} - Patient: {s.patient ? `ID ${s.patient.id}` : 'undefined'} - 
-                  folderNumber: {s.patient?.folderNumber || 'undefined'}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
-      
-      {/* Composant de débogage pour les médicaments */}
-      {sales.length > 0 && sales.some(s => !s.medication || !s.medication.name) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
-          <h3 className="font-semibold mb-2">⚠️ Médicaments manquants</h3>
-          <p className="text-sm">
-            Certaines ventes ont des médicaments manquants ou invalides. 
-            Ces ventes peuvent afficher "N/A" dans la colonne Médicament.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {sales.filter(s => !s.medication || !s.medication.name).map((s, index) => (
-                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
-                  Vente ID: {s.id} - Médicament: {s.medication ? `ID ${s.medication.id}` : 'undefined'} - 
-                  Nom: {s.medication?.name || 'undefined'}
-                </div>
-              ))}
-            </div>
-          </details>
         </div>
       )}
       

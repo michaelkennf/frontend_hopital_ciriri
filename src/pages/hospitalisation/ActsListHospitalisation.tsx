@@ -52,7 +52,7 @@ const ActsListHospitalisation: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await apiClient.get('/api/patients?service=actes_hospitalisation');
+      const res = await apiClient.get('/api/patients?service=hospitalisation');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);
@@ -71,30 +71,34 @@ const ActsListHospitalisation: React.FC = () => {
   const fetchActs = async () => {
     setLoading(true);
     try {
-      // Récupérer les actes programmés ET récemment réalisés (comme l'interface caissier)
-      const [scheduledRes, realizedRes] = await Promise.all([
-        apiClient.get('/api/acts/scheduled'),
-        apiClient.get('/api/acts/realized')
-      ]);
+      // Utiliser la route spécifique à l'hospitalisation qui filtre automatiquement par HOSP-
+      const res = await apiClient.get('/api/acts/hospitalisation');
+      const actsData = res.data.acts || [];
       
-      const scheduledActs = scheduledRes.data.acts || [];
+      console.log('🔍 Données reçues de l\'API actes hospitalisation:', res.data);
+      console.log('📊 Actes reçus:', actsData);
       
-      // Filtrer les actes réalisés récemment (dans les 10 dernières minutes)
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-      const recentlyRealizedActs = (realizedRes.data.acts || [])
-        .filter((act: any) => new Date(act.updatedAt || act.date) > tenMinutesAgo);
+      // Vérifier et nettoyer les données reçues
+      const validActs = actsData.filter((a: any) => {
+        if (!a.patient) {
+          console.warn('Acte sans patient détecté:', a);
+          return false;
+        }
+        if (!a.patient.folderNumber) {
+          console.warn('Acte avec patient sans folderNumber:', a);
+          return false;
+        }
+        if (!a.actType) {
+          console.warn('Acte sans type détecté:', a);
+          return false;
+        }
+        return true;
+      });
       
-      // Combiner les actes programmés et récemment réalisés
-      const allActs = [...scheduledActs, ...recentlyRealizedActs];
-      
-      // Filtrer pour ne garder que les actes des patients hospitalisation
-      const hospRes = await apiClient.get('/api/hospitalizations');
-      const hospHosp = hospRes.data.hospitalizations.filter((h: any) => h.patient && h.patient.folderNumber && !h.patient.folderNumber.startsWith('MAT-'));
-      const hospPatientIds = hospHosp.map((h: any) => h.patientId);
-      
-      const filteredActs = allActs.filter((a: any) => hospPatientIds.includes(a.patient.id));
-      setActs(filteredActs);
+      console.log('Actes valides récupérés:', validActs.length, 'sur', actsData.length);
+      setActs(validActs);
     } catch (e) {
+      console.error('Erreur lors de la récupération des actes:', e);
       setActs([]);
     } finally {
       setLoading(false);

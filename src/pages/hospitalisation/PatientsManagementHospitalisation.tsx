@@ -251,67 +251,6 @@ const PatientsManagementHospitalisation: React.FC = () => {
         </div>
       )}
       
-      {/* Composant de débogage pour les dates d'entrée */}
-      {patients.length > 0 && patients.some(p => !p.hospitalization?.startDate) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
-          <h3 className="font-semibold mb-2">⚠️ Données d'hospitalisation manquantes</h3>
-          <p className="text-sm">
-            Certains patients n'ont pas de données d'hospitalisation complètes. 
-            Cela peut causer l'affichage "N/A" dans la colonne Date d'entrée.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {patients.filter(p => !p.hospitalization?.startDate).map((p, index) => (
-                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
-                  Patient: {p.folderNumber} - {p.lastName} {p.firstName} - 
-                  Hospitalisation: {p.hospitalization ? `ID ${p.hospitalization.id}` : 'Aucune'} - 
-                  startDate: {p.hospitalization?.startDate || 'undefined'}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
-      
-      {/* Composant de débogage pour les dates invalides */}
-      {patients.length > 0 && patients.some(p => {
-        if (!p.hospitalization?.startDate) return false;
-        try {
-          new Date(p.hospitalization.startDate);
-          return false;
-        } catch {
-          return true;
-        }
-      }) && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">
-          <h3 className="font-semibold mb-2">⚠️ Dates d'entrée invalides détectées</h3>
-          <p className="text-sm">
-            Certaines dates d'entrée ont un format invalide et causent "Invalid Date".
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {patients.filter(p => {
-                if (!p.hospitalization?.startDate) return false;
-                try {
-                  new Date(p.hospitalization.startDate);
-                  return false;
-                } catch {
-                  return true;
-                }
-              }).map((p, index) => (
-                <div key={index} className="mb-1 p-2 bg-red-100 rounded">
-                  Patient: {p.folderNumber} - {p.lastName} {p.firstName} - 
-                  startDate brute: {p.hospitalization?.startDate} - 
-                  Type: {typeof p.hospitalization?.startDate}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
-      
       {/* Filtres */}
       <div className="card mb-6">
         {loading ? (

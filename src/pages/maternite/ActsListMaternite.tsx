@@ -52,7 +52,7 @@ const ActsListMaternite: React.FC = () => {
 
   const fetchPatients = async () => {
     try {
-      const res = await apiClient.get('/api/patients?service=actes_maternite');
+      const res = await apiClient.get('/api/patients?service=maternite');
       setPatients(res.data.patients || []);
     } catch (e) {
       setPatients([]);

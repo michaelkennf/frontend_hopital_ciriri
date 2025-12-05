@@ -233,50 +233,6 @@ const ExamsListHospitalisation: React.FC = () => {
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
       
-      {/* Composant de débogage pour les erreurs de données */}
-      {exams.length > 0 && exams.some(e => !e.patient || !e.patient.folderNumber) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 text-yellow-700">
-          <h3 className="font-semibold mb-2">⚠️ Données incomplètes détectées</h3>
-          <p className="text-sm">
-            Certains examens ont des données de patient manquantes. 
-            Ces examens ne seront pas affichés dans la liste.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {exams.filter(e => !e.patient || !e.patient.folderNumber).map((e, index) => (
-                <div key={index} className="mb-1 p-2 bg-yellow-100 rounded">
-                  Examen ID: {e.id} - Patient: {e.patient ? `ID ${e.patient.id}` : 'undefined'} - 
-                  folderNumber: {e.patient?.folderNumber || 'undefined'}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
-      
-      {/* Composant de débogage pour les types d'examens */}
-      {exams.length > 0 && exams.some(e => !e.examType || !e.examType.name) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4 text-blue-700">
-          <h3 className="font-semibold mb-2">⚠️ Types d'examens manquants</h3>
-          <p className="text-sm">
-            Certains examens ont des types manquants ou invalides. 
-            Ces examens peuvent afficher "N/A" dans la colonne Examen.
-          </p>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-medium">Voir les détails</summary>
-            <div className="mt-2 text-xs">
-              {exams.filter(e => !e.examType || !e.examType.name).map((e, index) => (
-                <div key={index} className="mb-1 p-2 bg-blue-100 rounded">
-                  Examen ID: {e.id} - Type: {e.examType ? `ID ${e.examType.id}` : 'undefined'} - 
-                  Nom: {e.examType?.name || 'undefined'}
-                </div>
-              ))}
-            </div>
-          </details>
-        </div>
-      )}
-      
       <div className="card mb-6" ref={tableRef}>
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>

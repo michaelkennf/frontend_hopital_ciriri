@@ -172,7 +172,7 @@ const Invoices: React.FC = () => {
               width: 100% !important; 
               margin: 0 !important; 
               padding: 3mm !important;
-              font-size: 11px !important;
+              font-size: 14px !important;
               color: black !important;
               background: white !important;
               font-family: Arial, sans-serif !important;
@@ -187,22 +187,22 @@ const Invoices: React.FC = () => {
             }
             .facture-header { 
               text-align: center !important; 
-              font-size: 13px !important; 
+              font-size: 18px !important; 
               font-weight: bold !important; 
-              margin-bottom: 8px !important;
+              margin-bottom: 10px !important;
               color: black !important;
             }
             .facture-table { 
               width: 100% !important; 
               border-collapse: collapse !important; 
-              font-size: 10px !important;
-              margin: 8px 0 !important;
+              font-size: 14px !important;
+              margin: 10px 0 !important;
               table-layout: fixed !important;
               font-weight: bold !important;
             }
             .facture-table th, .facture-table td { 
               border: 1px solid black !important; 
-              padding: 4px 3px !important; 
+              padding: 6px 4px !important; 
               text-align: left !important;
               color: black !important;
               word-wrap: break-word !important;
@@ -212,19 +212,20 @@ const Invoices: React.FC = () => {
             .facture-table th {
               background: #f0f0f0 !important;
               font-weight: bold !important;
+              font-size: 15px !important;
             }
             .footer { 
-              font-size: 9px !important;
+              font-size: 12px !important;
               text-align: center !important; 
-              margin-top: 12px !important; 
+              margin-top: 15px !important; 
               color: black !important;
               border-top: 1px solid black !important;
-              padding-top: 6px !important;
+              padding-top: 8px !important;
               font-weight: bold !important;
             }
             .entete-logo { 
-              height: 30px !important; 
-              margin-bottom: 4px !important;
+              height: 40px !important; 
+              margin-bottom: 6px !important;
               display: block !important;
               margin-left: auto !important;
               margin-right: auto !important;
@@ -232,29 +233,29 @@ const Invoices: React.FC = () => {
             .entete-title { 
               color: black !important; 
               font-weight: bold !important; 
-              font-size: 12px !important;
-              margin: 4px 0 !important;
+              font-size: 16px !important;
+              margin: 6px 0 !important;
             }
             .entete-sub { 
               color: black !important; 
               font-weight: bold !important; 
-              font-size: 10px !important;
-              margin: 2px 0 !important;
+              font-size: 13px !important;
+              margin: 4px 0 !important;
             }
             .patient-info {
-              margin: 6px 0 !important;
-              font-size: 10px !important;
+              margin: 8px 0 !important;
+              font-size: 14px !important;
               color: black !important;
               font-weight: bold !important;
             }
             .total-section {
-              margin-top: 8px !important;
+              margin-top: 10px !important;
               text-align: right !important;
-              font-size: 11px !important;
+              font-size: 16px !important;
               font-weight: bold !important;
               color: black !important;
               border-top: 2px solid black !important;
-              padding-top: 4px !important;
+              padding-top: 6px !important;
             }
             .no-break {
               page-break-inside: avoid !important;
@@ -281,7 +282,7 @@ const Invoices: React.FC = () => {
           
           body { 
             font-family: Arial, sans-serif; 
-            font-size: 11px;
+            font-size: 14px;
             width: 100%; 
             margin: 0; 
             padding: 8px;
@@ -298,22 +299,22 @@ const Invoices: React.FC = () => {
           }
           .facture-header { 
             text-align: center; 
-            font-size: 13px; 
+            font-size: 18px; 
             font-weight: bold; 
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: black;
           }
           .facture-table { 
             width: 100%; 
             border-collapse: collapse; 
-            font-size: 10px;
-            margin: 8px 0;
+            font-size: 14px;
+            margin: 10px 0;
             table-layout: fixed;
             font-weight: bold;
           }
           .facture-table th, .facture-table td { 
             border: 1px solid black; 
-            padding: 4px 3px; 
+            padding: 6px 4px; 
             text-align: left;
             color: black;
             word-wrap: break-word;
@@ -323,19 +324,20 @@ const Invoices: React.FC = () => {
           .facture-table th {
             background: #f0f0f0;
             font-weight: bold;
+            font-size: 15px;
           }
           .footer { 
-            font-size: 9px;
+            font-size: 12px;
             text-align: center; 
-            margin-top: 12px; 
+            margin-top: 15px; 
             color: black;
             border-top: 1px solid black;
-            padding-top: 6px;
+            padding-top: 8px;
             font-weight: bold;
           }
           .entete-logo { 
-            height: 30px; 
-            margin-bottom: 4px;
+            height: 40px; 
+            margin-bottom: 6px;
             display: block;
             margin-left: auto;
             margin-right: auto;
@@ -343,29 +345,29 @@ const Invoices: React.FC = () => {
           .entete-title { 
             color: black; 
             font-weight: bold; 
-            font-size: 12px;
-            margin: 4px 0;
+            font-size: 16px;
+            margin: 6px 0;
           }
           .entete-sub { 
             color: black; 
             font-weight: bold; 
-            font-size: 10px;
-            margin: 2px 0;
+            font-size: 13px;
+            margin: 4px 0;
           }
           .patient-info {
-            margin: 6px 0;
-            font-size: 10px;
+            margin: 8px 0;
+            font-size: 14px;
             color: black;
             font-weight: bold;
           }
           .total-section {
-            margin-top: 8px;
+            margin-top: 10px;
             text-align: right;
-            font-size: 11px;
+            font-size: 16px;
             font-weight: bold;
             color: black;
             border-top: 2px solid black;
-            padding-top: 4px;
+            padding-top: 6px;
           }
         </style>
       `);
