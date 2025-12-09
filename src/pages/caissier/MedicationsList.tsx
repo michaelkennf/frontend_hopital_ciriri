@@ -249,210 +249,186 @@ const MedicationsList: React.FC = () => {
         <style>
           @media print {
             @page {
-              margin: 10mm !important;
-              size: A4 !important;
+              margin: 0 !important;
+              size: 72mm auto !important;
+            }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
             }
             body { 
-              width: 100% !important; 
-              margin: 0 !important; 
+              width: 72mm !important;
+              max-width: 72mm !important;
+              margin: 0 auto !important;
               padding: 2mm !important;
-              font-size: 12px !important;
+              font-size: 9px !important;
               color: black !important;
               background: white !important;
               font-family: Arial, sans-serif !important;
-              font-weight: bold !important;
+              font-weight: normal !important;
+              line-height: 1.2 !important;
             }
             .facture { 
-              width: 100% !important; 
-              max-width: 100% !important;
+              width: 100% !important;
               margin: 0 auto !important;
               padding: 0 !important;
-              font-weight: bold !important;
-              box-sizing: border-box !important;
             }
             .facture-header { 
               text-align: center !important; 
-              font-size: 16px !important; 
+              font-size: 11px !important; 
               font-weight: bold !important; 
-              margin-bottom: 8px !important;
-              color: black !important;
+              margin: 3px 0 !important;
+              padding: 2px 0 !important;
+            }
+            .entete-title {
+              text-align: center !important;
+              font-size: 10px !important;
+              font-weight: bold !important;
+              margin: 2px 0 !important;
+            }
+            .patient-info {
+              text-align: center !important;
+              font-size: 8px !important;
+              margin: 2px 0 !important;
+              padding: 1px 0 !important;
             }
             .facture-table { 
               width: 100% !important; 
               border-collapse: collapse !important; 
-              font-size: 11px !important;
-              margin: 8px 0 !important;
-              table-layout: auto !important;
-              font-weight: bold !important;
+              font-size: 8px !important;
+              margin: 3px 0 !important;
+              table-layout: fixed !important;
             }
             .facture-table th, .facture-table td { 
-              border: 1px solid black !important; 
-              padding: 4px 3px !important; 
-              text-align: left !important;
-              color: black !important;
+              border: 0.5px solid #000 !important; 
+              padding: 2px 1px !important; 
+              text-align: center !important;
+              font-size: 8px !important;
               word-wrap: break-word !important;
               overflow-wrap: break-word !important;
-              font-weight: bold !important;
-              font-size: 11px !important;
             }
             .facture-table th {
-              background: #f0f0f0 !important;
               font-weight: bold !important;
-              font-size: 12px !important;
+              background: transparent !important;
+            }
+            .total-section {
+              margin-top: 3px !important;
+              text-align: center !important;
+              font-size: 10px !important;
+              font-weight: bold !important;
+              border-top: 1px solid #000 !important;
+              padding-top: 2px !important;
             }
             .footer { 
-              font-size: 10px !important;
+              font-size: 7px !important;
               text-align: center !important; 
-              margin-top: 10px !important; 
-              color: black !important;
-              border-top: 1px solid black !important;
-              padding-top: 6px !important;
-              font-weight: bold !important;
+              margin-top: 4px !important; 
+              padding-top: 2px !important;
+              border-top: 0.5px solid #000 !important;
             }
             .entete-logo { 
-              height: 35px !important; 
-              margin-bottom: 4px !important;
-              display: block !important;
-              margin-left: auto !important;
-              margin-right: auto !important;
+              display: none !important;
             }
-            .entete-title { 
-              color: black !important; 
-              font-weight: bold !important; 
-              font-size: 14px !important;
-              margin: 4px 0 !important;
-            }
-            .entete-sub { 
-              color: black !important; 
-              font-weight: bold !important; 
-              font-size: 11px !important;
-              margin: 3px 0 !important;
-            }
-            * {
-              font-weight: bold !important;
-            }
-            p, span, div, td, th, h1, h2, h3, h4, h5, h6 {
-              font-weight: bold !important;
-            }
-            .facture * {
-              font-weight: bold !important;
-            }
-            .patient-info * {
-              font-weight: bold !important;
-            }
-            .total-section * {
-              font-weight: bold !important;
-            }
-            .footer * {
-              font-weight: bold !important;
+            hr {
+              border: none !important;
+              border-top: 0.5px solid #000 !important;
+              margin: 2px 0 !important;
             }
           }
           
           body { 
             font-family: Arial, sans-serif; 
-            font-size: 12px; 
-            width: 100%; 
-            margin: 0; 
-            padding: 4px;
+            font-size: 9px;
+            width: 72mm;
+            max-width: 72mm;
+            margin: 0 auto;
+            padding: 2mm;
             color: black;
             background: white;
-            font-weight: bold;
           }
           .facture { 
-            width: 100%; 
-            max-width: 100%; 
-            margin: 0 auto; 
-            padding: 4px;
-            font-weight: bold;
-            box-sizing: border-box;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0;
           }
           .facture-header { 
             text-align: center; 
-            font-size: 16px; 
+            font-size: 11px; 
             font-weight: bold; 
-            margin-bottom: 8px;
-            color: black;
+            margin: 3px 0;
+          }
+          .entete-title {
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+            margin: 2px 0;
+          }
+          .patient-info {
+            text-align: center;
+            font-size: 8px;
+            margin: 2px 0;
           }
           .facture-table { 
             width: 100%; 
             border-collapse: collapse; 
-            font-size: 11px;
-            margin: 8px 0;
-            table-layout: auto;
-            font-weight: bold;
+            font-size: 8px;
+            margin: 3px 0;
+            table-layout: fixed;
           }
           .facture-table th, .facture-table td { 
-            border: 1px solid black; 
-            padding: 4px 3px; 
-            text-align: left;
-            color: black;
+            border: 0.5px solid #000; 
+            padding: 2px 1px; 
+            text-align: center;
+            font-size: 8px;
             word-wrap: break-word;
             overflow-wrap: break-word;
-            font-weight: bold;
-            font-size: 11px;
           }
           .facture-table th {
-            background: #f0f0f0;
             font-weight: bold;
-            font-size: 12px;
+          }
+          .total-section {
+            margin-top: 3px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+            border-top: 1px solid #000;
+            padding-top: 2px;
           }
           .footer { 
-            font-size: 10px;
+            font-size: 7px;
             text-align: center; 
-            margin-top: 10px; 
-            color: black;
-            border-top: 1px solid black;
-            padding-top: 6px;
-            font-weight: bold;
+            margin-top: 4px;
+            padding-top: 2px;
+            border-top: 0.5px solid #000;
           }
           .entete-logo { 
-            height: 35px; 
-            margin-bottom: 4px;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-          }
-          .entete-title { 
-            color: black; 
-            font-weight: bold; 
-            font-size: 14px;
-            margin: 4px 0;
-          }
-          .entete-sub { 
-            color: black; 
-            font-weight: bold; 
-            font-size: 11px;
-            margin: 3px 0;
+            display: none;
           }
         </style>
       `);
       win.document.write('</head><body>');
       // Entête institutionnelle
-      win.document.write('<div style="text-align:center;">');
-      win.document.write('<img src="/logo_polycliniques.jpg" class="entete-logo" alt="Logo" /><br/>');
-      win.document.write('<div style="font-size:9px;font-weight:bold;"><strong>REPUBLIQUE DEMOCRATIQUE DU CONGO</strong><br/><strong>PROVINCE DU SUD-KIVU</strong><br/><strong>VILLE DE BUKAVU</strong><br/><strong>ZONE DE SANTE URBAINE DE KADUTU</strong></div>');
-      win.document.write('<div class="entete-sub"><strong>FONDATION UMOJA</strong></div>');
-      win.document.write('<div style="font-size:10px;font-weight:bold;color:#009900;"><strong>"F.U" asbl</strong></div>');
-      win.document.write('<div style="font-size:9px;font-weight:bold;"><strong>DEPARTEMENT DES OEUVRES MEDICALES</strong></div>');
-      win.document.write('<div class="entete-title"><strong>POLYCLINIQUE DES APOTRES</strong></div>');
-      win.document.write('</div>');
-      // Facture
       win.document.write('<div class="facture">');
-      win.document.write('<div class="facture-header"><strong>FACTURE MÉDICAMENT</strong></div>');
+      win.document.write('<div class="entete-title">POLYCLINIQUE DES APOTRES</div>');
+      win.document.write('<hr/>');
+      win.document.write('<div class="facture-header">FACTURE MEDICAMENT</div>');
+      win.document.write(`<div class="patient-info">${sale.patient.folderNumber}</div>`);
+      win.document.write(`<div class="patient-info">${(sale.patient.lastName || '').toUpperCase()} ${sale.patient.firstName || ''}</div>`);
+      win.document.write(`<div class="patient-info">${new Date(sale.date).toLocaleDateString('fr-FR')}</div>`);
+      win.document.write('<hr/>');
       win.document.write('<table class="facture-table"><tbody>');
-      win.document.write(`<tr><td><strong>Patient</strong></td><td><strong>${sale.patient.folderNumber}</strong></td></tr>`);
-      win.document.write(`<tr><td><strong>Médicament</strong></td><td><strong>${sale.medication.name}</strong></td></tr>`);
-      win.document.write(`<tr><td><strong>Quantité</strong></td><td><strong>${sale.quantity}</strong></td></tr>`);
-      win.document.write(`<tr><td><strong>Date</strong></td><td><strong>${new Date(sale.date).toLocaleDateString('fr-FR')}</strong></td></tr>`);
-      win.document.write(`<tr><td><strong>Prix unitaire</strong></td><td><strong>${sale.medication.price} $</strong></td></tr>`);
-      win.document.write(`<tr><td><strong>Total</strong></td><td><strong>${sale.total} $</strong></td></tr>`);
+      win.document.write(`<tr><th>Medicament</th><th>Qte</th><th>PU</th><th>Total</th></tr>`);
+      const medName = sale.medication.name.substring(0, 15);
+      win.document.write(`<tr><td>${medName}</td><td>${sale.quantity}</td><td>${sale.medication.price}$</td><td>${sale.total}$</td></tr>`);
       win.document.write('</tbody></table>');
-      win.document.write('</div>');
-      // Bas de page institutionnel
+      win.document.write('<hr/>');
+      win.document.write(`<div class="total-section">TOTAL: ${sale.total} $</div>`);
       win.document.write('<div class="footer">');
-      win.document.write('<strong>Adresse :</strong> DRCONGO/SK/BKV/Av. BUHOZI/KAJANGU/CIRIRI<br/>');
-      win.document.write('<strong>Tél :</strong> (+243) 975 822 376, 843 066 779<br/>');
-      win.document.write('<strong>Email :</strong> polycliniquedesapotres1121@gmail.com');
+      win.document.write('DRCONGO/SK/BKV<br/>');
+      win.document.write('Av. BUHOZI/KAJANGU/CIRIRI<br/>');
+      win.document.write('Tel: (+243) 975 822 376');
+      win.document.write('</div>');
       win.document.write('</div>');
       win.document.write('</body></html>');
       win.document.close();
