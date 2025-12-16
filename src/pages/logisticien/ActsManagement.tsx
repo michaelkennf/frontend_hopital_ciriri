@@ -22,12 +22,13 @@ const ActsManagement: React.FC = () => {
   const [editPrice, setEditPrice] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const fetchTypes = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get('/api/acts');
+      const res = await apiClient.get('/api/acts/types');
       setTypes(res.data.actTypes || []);
     } catch (e: any) {
       setError('Erreur lors du chargement des types d\'actes');
@@ -44,6 +45,7 @@ const ActsManagement: React.FC = () => {
     e.preventDefault();
     setAdding(true);
     setError(null);
+    setSuccess(null);
     try {
       await apiClient.post('/api/acts/types', {
         name,
@@ -51,7 +53,8 @@ const ActsManagement: React.FC = () => {
       });
       setName('');
       setPrice('');
-      fetchTypes();
+      setSuccess('Type d\'acte ajouté avec succès');
+      await fetchTypes();
     } catch (e: any) {
       setError(e.response?.data?.error || 'Erreur lors de l\'ajout');
     } finally {
@@ -74,10 +77,12 @@ const ActsManagement: React.FC = () => {
   const handleDelete = async () => {
     if (!deletingId) return;
     setDeleteError(null);
+    setSuccess(null);
     try {
       await apiClient.delete(`/api/acts/types/${deletingId}`);
       closeDelete();
-      fetchTypes();
+      setSuccess('Type d\'acte supprimé avec succès');
+      await fetchTypes();
     } catch (e: any) {
       setDeleteError(e.response?.data?.error || 'Suppression non autorisée ou impossible.');
     }
@@ -103,13 +108,15 @@ const ActsManagement: React.FC = () => {
     if (!editType) return;
     setEditing(true);
     setEditError(null);
+    setSuccess(null);
     try {
       await apiClient.patch(`/api/acts/types/${editType.id}`, {
         name: editName,
         price: parseFloat(editPrice)
       });
       closeEdit();
-      fetchTypes();
+      setSuccess('Type d\'acte modifié avec succès');
+      await fetchTypes();
     } catch (e: any) {
       setEditError(e.response?.data?.error || 'Erreur lors de la modification');
     } finally {
@@ -144,8 +151,13 @@ const ActsManagement: React.FC = () => {
         </button>
       </form>
       {error && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{error}</div>}
+      {success && <div className="bg-green-100 text-green-700 p-2 mb-2 rounded">{success}</div>}
       {loading ? (
         <div>Chargement...</div>
+      ) : types.length === 0 ? (
+        <div className="bg-gray-50 p-6 rounded text-center text-gray-600">
+          Aucun type d'acte enregistré. Ajoutez-en un en utilisant le formulaire ci-dessus.
+        </div>
       ) : (
         <table className="min-w-full text-sm bg-white shadow rounded">
           <thead>

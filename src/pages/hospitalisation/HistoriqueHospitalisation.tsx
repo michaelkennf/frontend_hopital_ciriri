@@ -175,128 +175,128 @@ const HistoriqueHospitalisation: React.FC = () => {
         <form onSubmit={handleSave}>
           <table className="min-w-full border border-gray-300">
             <thead>
-              <tr className="bg-gray-100 text-xs">
-                <th className="border px-3 py-2">NOM ET POST NOM</th>
-                <th className="border px-3 py-2">SEXE</th>
-                <th className="border px-3 py-2">AGE</th>
-                <th className="border px-3 py-2">POIDS</th>
-                <th className="border px-3 py-2">ADRESSE</th>
-                <th className="border px-3 py-2">PROFESSION</th>
-                <th className="border px-3 py-2">ETAT CIVIL</th>
-                <th className="border px-3 py-2">SERVICE</th>
-                <th className="border px-3 py-2">DATE D'ENTREE</th>
-                <th className="border px-3 py-2">HEURE</th>
-                <th className="border px-3 py-2">DATE DE SORTIE</th>
-                <th className="border px-3 py-2"></th>
+              <tr className="bg-gray-100 text-sm">
+                <th className="border px-4 py-3 min-w-[250px] w-[250px]">NOM ET POST NOM</th>
+                <th className="border px-4 py-3 min-w-[120px] w-[120px]">SEXE</th>
+                <th className="border px-4 py-3 min-w-[100px] w-[100px]">AGE</th>
+                <th className="border px-4 py-3 min-w-[120px] w-[120px]">POIDS</th>
+                <th className="border px-4 py-3 min-w-[300px] w-[300px]">ADRESSE</th>
+                <th className="border px-4 py-3 min-w-[200px] w-[200px]">PROFESSION</th>
+                <th className="border px-4 py-3 min-w-[150px] w-[150px]">ETAT CIVIL</th>
+                <th className="border px-4 py-3">SERVICE</th>
+                <th className="border px-4 py-3">DATE D'ENTREE</th>
+                <th className="border px-4 py-3">HEURE</th>
+                <th className="border px-4 py-3">DATE DE SORTIE</th>
+                <th className="border px-4 py-3"></th>
               </tr>
               <tr>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3 min-w-[250px] w-[250px]">
                   <input 
                     name="name" 
                     value={filters.name} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     placeholder="Nom..." 
                     required
                   />
                 </td>
-                <td className="border px-3 py-2">
-                  <select name="gender" value={filters.gender} onChange={handleChange} className="input-field w-full" required>
+                <td className="border px-4 py-3 min-w-[120px] w-[120px]">
+                  <select name="gender" value={filters.gender} onChange={handleChange} className="input-field w-full text-base py-2 px-3" required>
                     <option value="">Sélectionner</option>
                     <option value="M">M</option>
                     <option value="F">F</option>
                   </select>
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3 min-w-[100px] w-[100px]">
                   <input 
                     name="age" 
                     value={filters.age} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     placeholder="Age..." 
                     type="number" 
                     min="0" 
                     required
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3 min-w-[120px] w-[120px]">
                   <input 
                     name="weight" 
                     value={filters.weight} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     placeholder="Poids..." 
                     type="number" 
                     min="0" 
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3 min-w-[300px] w-[300px]">
                   <input 
                     name="address" 
                     value={filters.address} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     placeholder="Adresse..." 
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3 min-w-[200px] w-[200px]">
                   <input 
                     name="profession" 
                     value={filters.profession} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     placeholder="Profession..." 
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3 min-w-[150px] w-[150px]">
                   <input 
                     name="maritalStatus" 
                     value={filters.maritalStatus} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     placeholder="Etat civil..." 
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3">
                   <input 
                     name="service" 
                     value={filters.service} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     placeholder="Service..." 
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3">
                   <input 
                     name="entryDate" 
                     value={filters.entryDate} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     type="date" 
                     required
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3">
                   <input 
                     name="entryTime" 
                     value={filters.entryTime} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     type="time" 
                     required
                   />
                 </td>
-                <td className="border px-3 py-2">
+                <td className="border px-4 py-3">
                   <input 
                     name="exitDate" 
                     value={filters.exitDate} 
                     onChange={handleChange} 
-                    className="input-field w-full" 
+                    className="input-field w-full text-base py-2 px-3" 
                     type="date" 
                   />
                 </td>
-                <td className="border px-3 py-2 text-center">
-                  <button type="submit" className="btn-primary" disabled={saving}>
+                <td className="border px-4 py-3 text-center">
+                  <button type="submit" className="btn-primary py-2 px-4 text-base" disabled={saving}>
                     {saving ? 'Enregistrement...' : 'Enregistrer'}
                   </button>
                 </td>
@@ -314,18 +314,18 @@ const HistoriqueHospitalisation: React.FC = () => {
               ) : (
                 hospitalisations.map((hosp) => (
                   <tr key={hosp.id}>
-                    <td className="border px-3 py-2">{hosp.patientName || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.gender || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.age || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.weight || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.address || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.profession || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.maritalStatus || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.service || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.entryDate || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.entryTime || '-'}</td>
-                    <td className="border px-3 py-2">{hosp.exitDate || '-'}</td>
-                    <td className="border px-3 py-2"></td>
+                    <td className="border px-4 py-3 text-base min-w-[250px] w-[250px]">{hosp.patientName || '-'}</td>
+                    <td className="border px-4 py-3 text-base min-w-[120px] w-[120px]">{hosp.gender || '-'}</td>
+                    <td className="border px-4 py-3 text-base min-w-[100px] w-[100px]">{hosp.age || '-'}</td>
+                    <td className="border px-4 py-3 text-base min-w-[120px] w-[120px]">{hosp.weight || '-'}</td>
+                    <td className="border px-4 py-3 text-base min-w-[300px] w-[300px]">{hosp.address || '-'}</td>
+                    <td className="border px-4 py-3 text-base min-w-[200px] w-[200px]">{hosp.profession || '-'}</td>
+                    <td className="border px-4 py-3 text-base min-w-[150px] w-[150px]">{hosp.maritalStatus || '-'}</td>
+                    <td className="border px-4 py-3 text-base">{hosp.service || '-'}</td>
+                    <td className="border px-4 py-3 text-base">{hosp.entryDate || '-'}</td>
+                    <td className="border px-4 py-3 text-base">{hosp.entryTime || '-'}</td>
+                    <td className="border px-4 py-3 text-base">{hosp.exitDate || '-'}</td>
+                    <td className="border px-4 py-3"></td>
                   </tr>
                 ))
               )}

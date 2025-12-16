@@ -61,7 +61,7 @@ const ActsListHospitalisation: React.FC = () => {
 
   const fetchActTypes = async () => {
     try {
-      const res = await apiClient.get('/api/acts');
+      const res = await apiClient.get('/api/acts/types');
       setActTypes(res.data.actTypes || []);
     } catch (e) {
       setActTypes([]);
