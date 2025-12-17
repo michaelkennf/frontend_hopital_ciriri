@@ -12,6 +12,12 @@ export default defineConfig({
     port: 5008,
     host: '0.0.0.0',
     strictPort: true,
+    allowedHosts: [
+      'polyclinique.fikiri.org',
+      'localhost',
+      '127.0.0.1',
+      '.fikiri.org'
+    ],
   },
   build: {
     outDir: 'dist',
