@@ -8,4 +8,20 @@ export default defineConfig({
       '/api': 'http://localhost:5000',
     },
   },
+  preview: {
+    port: 5008,
+    host: '0.0.0.0',
+    strictPort: true,
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
 });

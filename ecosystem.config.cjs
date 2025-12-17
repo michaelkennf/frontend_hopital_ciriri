@@ -9,11 +9,13 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        PORT: 5008
+        PORT: 5008,
+        HOST: '0.0.0.0'
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 5008
+        PORT: 5008,
+        HOST: '0.0.0.0'
       },
       // Options de redémarrage
       watch: false,
