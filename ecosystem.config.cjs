@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'frontend',
+      name: 'frontend-polyclinique',
       script: 'npm',
       args: 'run start:prod',
       cwd: './',
