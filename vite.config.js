@@ -28,8 +28,8 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    // Utiliser terser au lieu d'esbuild pour éviter les erreurs EPIPE
-    minify: 'terser',
+    // Désactiver le minify pour éviter les erreurs (ou installer terser)
+    minify: false,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
