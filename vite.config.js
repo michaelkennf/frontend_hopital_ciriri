@@ -23,10 +23,24 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'esbuild',
+    // Utiliser terser au lieu d'esbuild pour éviter les erreurs EPIPE
+    minify: 'terser',
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: undefined,
+      },
+    },
+    // Options pour améliorer la stabilité du build
+    target: 'esnext',
+    cssCodeSplit: true,
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true,
+      },
+      format: {
+        comments: false,
       },
     },
   },
