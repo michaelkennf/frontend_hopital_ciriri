@@ -2,7 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      // Configuration pour éviter les problèmes avec esbuild
+      jsxRuntime: 'automatic',
+    })
+  ],
   server: {
     proxy: {
       '/api': 'http://localhost:5000',
