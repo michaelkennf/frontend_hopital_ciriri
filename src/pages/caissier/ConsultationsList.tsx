@@ -436,23 +436,29 @@ const ConsultationsList: React.FC = () => {
             font-size: 8px;
             margin: 2px 0;
           }
-          .facture-table { 
-            width: 100%; 
-            border-collapse: collapse; 
+          .ticket-item {
+            border-top: 0.5px dashed #000;
+            border-bottom: 0.5px dashed #000;
+            padding: 3px 0;
+            margin: 2px 0;
             font-size: 8px;
-            margin: 3px 0;
-            table-layout: fixed;
           }
-          .facture-table th, .facture-table td { 
-            border: 0.5px solid #000; 
-            padding: 2px 1px; 
-            text-align: center;
-            font-size: 8px;
+          .ticket-item-line {
+            display: flex;
+            justify-content: space-between;
+            margin: 1px 0;
             word-wrap: break-word;
             overflow-wrap: break-word;
           }
-          .facture-table th {
+          .ticket-item-desc {
             font-weight: bold;
+            flex: 1;
+            text-align: left;
+          }
+          .ticket-item-price {
+            text-align: right;
+            font-weight: bold;
+            white-space: nowrap;
           }
           .total-section {
             margin-top: 3px;
@@ -484,11 +490,14 @@ const ConsultationsList: React.FC = () => {
       win.document.write(`<div class="patient-info">${(consultation.patient.lastName || '').toUpperCase()} ${consultation.patient.firstName || ''}</div>`);
       win.document.write(`<div class="patient-info">${new Date(consultation.date).toLocaleDateString('fr-FR')}</div>`);
       win.document.write('<hr/>');
-      win.document.write('<table class="facture-table"><tbody>');
-      win.document.write(`<tr><th>Type</th><th>Prix</th></tr>`);
-      const consultType = consultation.consultationType.name.substring(0, 20);
-      win.document.write(`<tr><td>${consultType}</td><td>${consultation.consultationType.price.toLocaleString()}FC</td></tr>`);
-      win.document.write('</tbody></table>');
+      // Format ticket (sans tableau)
+      const consultType = consultation.consultationType.name;
+      win.document.write('<div class="ticket-item">');
+      win.document.write(`<div class="ticket-item-line">
+        <div class="ticket-item-desc">${consultType}</div>
+        <div class="ticket-item-price">${consultation.consultationType.price.toLocaleString()} FC</div>
+      </div>`);
+      win.document.write('</div>');
       win.document.write('<hr/>');
       win.document.write(`<div class="total-section">TOTAL: ${consultation.consultationType.price.toLocaleString()} FC</div>`);
       win.document.write('<div class="footer">');

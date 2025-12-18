@@ -209,29 +209,35 @@ const Invoices: React.FC = () => {
               margin: 2px 0 !important;
               padding: 1px 0 !important;
             }
-            .facture-table { 
-              width: 100% !important; 
-              border-collapse: collapse !important; 
+            .ticket-item {
+              border-top: 0.5px dashed #000 !important;
+              border-bottom: 0.5px dashed #000 !important;
+              padding: 3px 0 !important;
+              margin: 2px 0 !important;
               font-size: 8px !important;
-              margin: 3px 0 !important;
-              table-layout: fixed !important;
             }
-            .facture-table th, .facture-table td { 
-              border: 0.5px solid #000 !important; 
-              padding: 2px 1px !important; 
-              text-align: center !important;
-              font-size: 8px !important;
+            .ticket-item-line {
+              display: flex !important;
+              justify-content: space-between !important;
+              margin: 1px 0 !important;
               word-wrap: break-word !important;
               overflow-wrap: break-word !important;
             }
-            .facture-table th {
+            .ticket-item-desc {
               font-weight: bold !important;
-              background: transparent !important;
+              flex: 1 !important;
+              text-align: left !important;
             }
-            .facture-table th:nth-child(1) { width: 45% !important; }
-            .facture-table th:nth-child(2) { width: 15% !important; }
-            .facture-table th:nth-child(3) { width: 20% !important; }
-            .facture-table th:nth-child(4) { width: 20% !important; }
+            .ticket-item-details {
+              font-size: 7px !important;
+              color: #333 !important;
+              margin-top: 1px !important;
+            }
+            .ticket-item-price {
+              text-align: right !important;
+              font-weight: bold !important;
+              white-space: nowrap !important;
+            }
             .total-section {
               margin-top: 3px !important;
               text-align: center !important;
@@ -289,28 +295,35 @@ const Invoices: React.FC = () => {
             font-size: 8px;
             margin: 2px 0;
           }
-          .facture-table { 
-            width: 100%; 
-            border-collapse: collapse; 
+          .ticket-item {
+            border-top: 0.5px dashed #000;
+            border-bottom: 0.5px dashed #000;
+            padding: 3px 0;
+            margin: 2px 0;
             font-size: 8px;
-            margin: 3px 0;
-            table-layout: fixed;
           }
-          .facture-table th, .facture-table td { 
-            border: 0.5px solid #000; 
-            padding: 2px 1px; 
-            text-align: center;
-            font-size: 8px;
+          .ticket-item-line {
+            display: flex;
+            justify-content: space-between;
+            margin: 1px 0;
             word-wrap: break-word;
             overflow-wrap: break-word;
           }
-          .facture-table th {
+          .ticket-item-desc {
             font-weight: bold;
+            flex: 1;
+            text-align: left;
           }
-          .facture-table th:nth-child(1) { width: 45%; }
-          .facture-table th:nth-child(2) { width: 15%; }
-          .facture-table th:nth-child(3) { width: 20%; }
-          .facture-table th:nth-child(4) { width: 20%; }
+          .ticket-item-details {
+            font-size: 7px;
+            color: #333;
+            margin-top: 1px;
+          }
+          .ticket-item-price {
+            text-align: right;
+            font-weight: bold;
+            white-space: nowrap;
+          }
           .total-section {
             margin-top: 3px;
             text-align: center;
@@ -344,27 +357,32 @@ const Invoices: React.FC = () => {
       win.document.write(`<div class="patient-info">${new Date(invoice.createdAt).toLocaleDateString('fr-FR')} ${new Date(invoice.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
       win.document.write('<hr/>');
       
-      // Tableau des items
-      win.document.write('<table class="facture-table">');
-      win.document.write('<thead><tr><th>Designation</th><th>Qte</th><th>PU</th><th>Total</th></tr></thead>');
-      win.document.write('<tbody>');
-      
-      // Log chaque item avant de l'écrire
+      // Items en format ticket (sans tableau)
       invoice.items.forEach((item, index) => {
         console.log(`📝 Item ${index}:`, item);
-        const desc = (item.description || 'N/A').substring(0, 20);
+        const desc = item.description || 'N/A';
         const qty = item.quantity || 0;
-        const pu = `${item.unitPrice || 0}${item.type === 'consultation' ? 'FC' : '$'}`;
-        const total = `${item.totalPrice || 0}${item.type === 'consultation' ? 'FC' : '$'}`;
-        win.document.write(`<tr>
-          <td>${desc}</td>
-          <td>${qty}</td>
-          <td>${pu}</td>
-          <td>${total}</td>
-        </tr>`);
+        const pu = item.unitPrice || 0;
+        const total = item.totalPrice || 0;
+        const currency = item.type === 'consultation' ? 'FC' : '$';
+        
+        win.document.write('<div class="ticket-item">');
+        // Ligne principale : Description
+        win.document.write(`<div class="ticket-item-line">
+          <div class="ticket-item-desc">${desc}</div>
+        </div>`);
+        // Détails : Quantité et Prix unitaire
+        win.document.write(`<div class="ticket-item-details">
+          Qte: ${qty} x ${pu}${currency}
+        </div>`);
+        // Prix total aligné à droite
+        win.document.write(`<div class="ticket-item-line">
+          <div></div>
+          <div class="ticket-item-price">${total}${currency}</div>
+        </div>`);
+        win.document.write('</div>');
       });
       
-      win.document.write('</tbody></table>');
       win.document.write('<hr/>');
       
       // Total

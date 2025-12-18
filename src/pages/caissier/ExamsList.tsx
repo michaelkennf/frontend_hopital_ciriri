@@ -259,24 +259,29 @@ const ExamsList: React.FC = () => {
               margin: 2px 0 !important;
               padding: 1px 0 !important;
             }
-            .facture-table { 
-              width: 100% !important; 
-              border-collapse: collapse !important; 
+            .ticket-item {
+              border-top: 0.5px dashed #000 !important;
+              border-bottom: 0.5px dashed #000 !important;
+              padding: 3px 0 !important;
+              margin: 2px 0 !important;
               font-size: 8px !important;
-              margin: 3px 0 !important;
-              table-layout: fixed !important;
             }
-            .facture-table th, .facture-table td { 
-              border: 0.5px solid #000 !important; 
-              padding: 2px 1px !important; 
-              text-align: center !important;
-              font-size: 8px !important;
+            .ticket-item-line {
+              display: flex !important;
+              justify-content: space-between !important;
+              margin: 1px 0 !important;
               word-wrap: break-word !important;
               overflow-wrap: break-word !important;
             }
-            .facture-table th {
+            .ticket-item-desc {
               font-weight: bold !important;
-              background: transparent !important;
+              flex: 1 !important;
+              text-align: left !important;
+            }
+            .ticket-item-price {
+              text-align: right !important;
+              font-weight: bold !important;
+              white-space: nowrap !important;
             }
             .total-section {
               margin-top: 3px !important;
@@ -383,11 +388,14 @@ const ExamsList: React.FC = () => {
       win.document.write(`<div class="patient-info">${(exam.patient.lastName || '').toUpperCase()} ${exam.patient.firstName || ''}</div>`);
       win.document.write(`<div class="patient-info">${new Date(exam.date).toLocaleDateString('fr-FR')}</div>`);
       win.document.write('<hr/>');
-      win.document.write('<table class="facture-table"><tbody>');
-      win.document.write(`<tr><th>Examen</th><th>Prix</th></tr>`);
-      const examName = exam.examType.name.substring(0, 20);
-      win.document.write(`<tr><td>${examName}</td><td>${exam.price}$</td></tr>`);
-      win.document.write('</tbody></table>');
+      // Format ticket (sans tableau)
+      const examName = exam.examType.name;
+      win.document.write('<div class="ticket-item">');
+      win.document.write(`<div class="ticket-item-line">
+        <div class="ticket-item-desc">${examName}</div>
+        <div class="ticket-item-price">${exam.price} $</div>
+      </div>`);
+      win.document.write('</div>');
       win.document.write('<hr/>');
       win.document.write(`<div class="total-section">TOTAL: ${exam.price} $</div>`);
       win.document.write('<div class="footer">');

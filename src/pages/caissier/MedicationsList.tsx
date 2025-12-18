@@ -293,24 +293,34 @@ const MedicationsList: React.FC = () => {
               margin: 2px 0 !important;
               padding: 1px 0 !important;
             }
-            .facture-table { 
-              width: 100% !important; 
-              border-collapse: collapse !important; 
+            .ticket-item {
+              border-top: 0.5px dashed #000 !important;
+              border-bottom: 0.5px dashed #000 !important;
+              padding: 3px 0 !important;
+              margin: 2px 0 !important;
               font-size: 8px !important;
-              margin: 3px 0 !important;
-              table-layout: fixed !important;
             }
-            .facture-table th, .facture-table td { 
-              border: 0.5px solid #000 !important; 
-              padding: 2px 1px !important; 
-              text-align: center !important;
-              font-size: 8px !important;
+            .ticket-item-line {
+              display: flex !important;
+              justify-content: space-between !important;
+              margin: 1px 0 !important;
               word-wrap: break-word !important;
               overflow-wrap: break-word !important;
             }
-            .facture-table th {
+            .ticket-item-desc {
               font-weight: bold !important;
-              background: transparent !important;
+              flex: 1 !important;
+              text-align: left !important;
+            }
+            .ticket-item-details {
+              font-size: 7px !important;
+              color: #333 !important;
+              margin-top: 1px !important;
+            }
+            .ticket-item-price {
+              text-align: right !important;
+              font-weight: bold !important;
+              white-space: nowrap !important;
             }
             .total-section {
               margin-top: 3px !important;
@@ -417,11 +427,23 @@ const MedicationsList: React.FC = () => {
       win.document.write(`<div class="patient-info">${(sale.patient.lastName || '').toUpperCase()} ${sale.patient.firstName || ''}</div>`);
       win.document.write(`<div class="patient-info">${new Date(sale.date).toLocaleDateString('fr-FR')}</div>`);
       win.document.write('<hr/>');
-      win.document.write('<table class="facture-table"><tbody>');
-      win.document.write(`<tr><th>Medicament</th><th>Qte</th><th>PU</th><th>Total</th></tr>`);
-      const medName = sale.medication.name.substring(0, 15);
-      win.document.write(`<tr><td>${medName}</td><td>${sale.quantity}</td><td>${sale.medication.price}$</td><td>${sale.total}$</td></tr>`);
-      win.document.write('</tbody></table>');
+      // Format ticket (sans tableau)
+      const medName = sale.medication.name;
+      win.document.write('<div class="ticket-item">');
+      // Ligne principale : Nom du médicament
+      win.document.write(`<div class="ticket-item-line">
+        <div class="ticket-item-desc">${medName}</div>
+      </div>`);
+      // Détails : Quantité et Prix unitaire
+      win.document.write(`<div class="ticket-item-details">
+        Qte: ${sale.quantity} x ${sale.medication.price}$
+      </div>`);
+      // Prix total aligné à droite
+      win.document.write(`<div class="ticket-item-line">
+        <div></div>
+        <div class="ticket-item-price">${sale.total} $</div>
+      </div>`);
+      win.document.write('</div>');
       win.document.write('<hr/>');
       win.document.write(`<div class="total-section">TOTAL: ${sale.total} $</div>`);
       win.document.write('<div class="footer">');
