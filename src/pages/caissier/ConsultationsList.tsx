@@ -456,7 +456,7 @@ const ConsultationsList: React.FC = () => {
             text-align: left;
           }
           .ticket-item-price {
-            text-align: right;
+            text-align: center;
             font-weight: bold;
             white-space: nowrap;
           }
@@ -494,8 +494,10 @@ const ConsultationsList: React.FC = () => {
       const consultType = consultation.consultationType.name;
       win.document.write('<div class="ticket-item">');
       win.document.write(`<div class="ticket-item-line">
-        <div class="ticket-item-desc">${consultType}</div>
-        <div class="ticket-item-price">${consultation.consultationType.price.toLocaleString()} FC</div>
+        <div class="ticket-item-desc" style="width: 100%; text-align: center;">${consultType}</div>
+      </div>`);
+      win.document.write(`<div class="ticket-item-line">
+        <div class="ticket-item-price" style="width: 100%;">${consultation.consultationType.price.toLocaleString()} FC</div>
       </div>`);
       win.document.write('</div>');
       win.document.write('<hr/>');
