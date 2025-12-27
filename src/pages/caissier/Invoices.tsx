@@ -234,7 +234,7 @@ const Invoices: React.FC = () => {
               margin-top: 1px !important;
             }
             .ticket-item-price {
-              text-align: center !important;
+              text-align: left !important;
               font-weight: bold !important;
               white-space: nowrap !important;
             }
@@ -320,7 +320,7 @@ const Invoices: React.FC = () => {
             margin-top: 1px;
           }
           .ticket-item-price {
-            text-align: center;
+            text-align: left;
             font-weight: bold;
             white-space: nowrap;
           }
@@ -375,9 +375,9 @@ const Invoices: React.FC = () => {
         win.document.write(`<div class="ticket-item-details">
           Qte: ${qty} x ${pu}${currency}
         </div>`);
-        // Prix total centré
+        // Prix total aligné à gauche
         win.document.write(`<div class="ticket-item-line">
-          <div class="ticket-item-price" style="width: 100%;">${total}${currency}</div>
+          <div class="ticket-item-price">${total}${currency}</div>
         </div>`);
         win.document.write('</div>');
       });

@@ -279,7 +279,7 @@ const ExamsList: React.FC = () => {
               text-align: left !important;
             }
             .ticket-item-price {
-              text-align: center !important;
+              text-align: left !important;
               font-weight: bold !important;
               white-space: nowrap !important;
             }
@@ -392,10 +392,10 @@ const ExamsList: React.FC = () => {
       const examName = exam.examType.name;
       win.document.write('<div class="ticket-item">');
       win.document.write(`<div class="ticket-item-line">
-        <div class="ticket-item-desc" style="width: 100%; text-align: center;">${examName}</div>
+        <div class="ticket-item-desc">${examName}</div>
       </div>`);
       win.document.write(`<div class="ticket-item-line">
-        <div class="ticket-item-price" style="width: 100%;">${exam.price} $</div>
+        <div class="ticket-item-price">${exam.price} $</div>
       </div>`);
       win.document.write('</div>');
       win.document.write('<hr/>');

@@ -318,7 +318,7 @@ const MedicationsList: React.FC = () => {
               margin-top: 1px !important;
             }
             .ticket-item-price {
-              text-align: center !important;
+              text-align: left !important;
               font-weight: bold !important;
               white-space: nowrap !important;
             }
@@ -438,9 +438,9 @@ const MedicationsList: React.FC = () => {
       win.document.write(`<div class="ticket-item-details">
         Qte: ${sale.quantity} x ${sale.medication.price}$
       </div>`);
-      // Prix total centré
+      // Prix total aligné à gauche
       win.document.write(`<div class="ticket-item-line">
-        <div class="ticket-item-price" style="width: 100%;">${sale.total} $</div>
+        <div class="ticket-item-price">${sale.total} $</div>
       </div>`);
       win.document.write('</div>');
       win.document.write('<hr/>');
