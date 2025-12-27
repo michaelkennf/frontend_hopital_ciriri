@@ -262,11 +262,11 @@ const MedicationsList: React.FC = () => {
               max-width: 72mm !important;
               margin: 0 auto !important;
               padding: 2mm !important;
-              font-size: 9px !important;
+              font-size: 12px !important;
               color: black !important;
               background: white !important;
               font-family: Arial, sans-serif !important;
-              font-weight: normal !important;
+              font-weight: bold !important;
               line-height: 1.2 !important;
             }
             .facture { 
@@ -276,20 +276,21 @@ const MedicationsList: React.FC = () => {
             }
             .facture-header { 
               text-align: center !important; 
-              font-size: 11px !important; 
+              font-size: 14px !important; 
               font-weight: bold !important; 
               margin: 3px 0 !important;
               padding: 2px 0 !important;
             }
             .entete-title {
               text-align: center !important;
-              font-size: 10px !important;
+              font-size: 13px !important;
               font-weight: bold !important;
               margin: 2px 0 !important;
             }
             .patient-info {
               text-align: center !important;
-              font-size: 8px !important;
+              font-size: 11px !important;
+              font-weight: bold !important;
               margin: 2px 0 !important;
               padding: 1px 0 !important;
             }
@@ -298,7 +299,8 @@ const MedicationsList: React.FC = () => {
               border-bottom: 0.5px dashed #000 !important;
               padding: 3px 0 !important;
               margin: 2px 0 !important;
-              font-size: 8px !important;
+              font-size: 11px !important;
+              font-weight: bold !important;
             }
             .ticket-item-line {
               display: flex !important;
@@ -306,6 +308,7 @@ const MedicationsList: React.FC = () => {
               margin: 1px 0 !important;
               word-wrap: break-word !important;
               overflow-wrap: break-word !important;
+              font-weight: bold !important;
             }
             .ticket-item-desc {
               font-weight: bold !important;
@@ -313,7 +316,8 @@ const MedicationsList: React.FC = () => {
               text-align: left !important;
             }
             .ticket-item-details {
-              font-size: 7px !important;
+              font-size: 10px !important;
+              font-weight: bold !important;
               color: #333 !important;
               margin-top: 1px !important;
             }
@@ -325,13 +329,14 @@ const MedicationsList: React.FC = () => {
             .total-section {
               margin-top: 3px !important;
               text-align: center !important;
-              font-size: 10px !important;
+              font-size: 13px !important;
               font-weight: bold !important;
               border-top: 1px solid #000 !important;
               padding-top: 2px !important;
             }
             .footer { 
-              font-size: 7px !important;
+              font-size: 10px !important;
+              font-weight: bold !important;
               text-align: center !important; 
               margin-top: 4px !important; 
               padding-top: 2px !important;
@@ -349,7 +354,8 @@ const MedicationsList: React.FC = () => {
           
           body { 
             font-family: Arial, sans-serif; 
-            font-size: 9px;
+            font-size: 12px;
+            font-weight: bold;
             width: 72mm;
             max-width: 72mm;
             margin: 0 auto;
@@ -364,25 +370,27 @@ const MedicationsList: React.FC = () => {
           }
           .facture-header { 
             text-align: center; 
-            font-size: 11px; 
+            font-size: 14px; 
             font-weight: bold; 
             margin: 3px 0;
           }
           .entete-title {
             text-align: center;
-            font-size: 10px;
+            font-size: 13px;
             font-weight: bold;
             margin: 2px 0;
           }
           .patient-info {
             text-align: center;
-            font-size: 8px;
+            font-size: 11px;
+            font-weight: bold;
             margin: 2px 0;
           }
           .facture-table { 
             width: 100%; 
             border-collapse: collapse; 
-            font-size: 8px;
+            font-size: 11px;
+            font-weight: bold;
             margin: 3px 0;
             table-layout: fixed;
           }
@@ -390,7 +398,8 @@ const MedicationsList: React.FC = () => {
             border: 0.5px solid #000; 
             padding: 2px 1px; 
             text-align: center;
-            font-size: 8px;
+            font-size: 11px;
+            font-weight: bold;
             word-wrap: break-word;
             overflow-wrap: break-word;
           }
@@ -400,13 +409,14 @@ const MedicationsList: React.FC = () => {
           .total-section {
             margin-top: 3px;
             text-align: center;
-            font-size: 10px;
+            font-size: 13px;
             font-weight: bold;
             border-top: 1px solid #000;
             padding-top: 2px;
           }
           .footer { 
-            font-size: 7px;
+            font-size: 10px;
+            font-weight: bold;
             text-align: center; 
             margin-top: 4px;
             padding-top: 2px;
