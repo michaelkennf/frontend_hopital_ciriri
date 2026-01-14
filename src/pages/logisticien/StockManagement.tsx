@@ -5,12 +5,13 @@ interface Medication {
   id: number;
   name: string;
   quantity: number;
-  minQuantity: number;
+  minQuantity?: number; // Peut ne pas exister dans le schéma Prisma
   unit: string;
-  price?: number;
   purchasePrice?: number; // Prix d'achat
   sellingPrice?: number;  // Prix de vente
-  expirationDate?: string;
+  description?: string;
+  category?: string;
+  expirationDate?: string; // Peut ne pas exister dans le schéma Prisma
 }
 
 interface StockMovement {
@@ -38,9 +39,6 @@ const StockManagement: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   // Pour édition/suppression
   const [editMed, setEditMed] = useState<Medication | null>(null);
-  const [editFields, setEditFields] = useState<any>({});
-  const [editError, setEditError] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -50,9 +48,10 @@ const StockManagement: React.FC = () => {
     quantity: '', 
     minQuantity: '', 
     unit: '', 
-    price: '', 
     purchasePrice: '', // Prix d'achat
     sellingPrice: '',  // Prix de vente
+    description: '',
+    category: '',
     expirationDate: '' 
   });
   const [addError, setAddError] = useState<string | null>(null);
@@ -120,45 +119,23 @@ const StockManagement: React.FC = () => {
     }
   };
 
-  // Edition médicament
+  // Edition médicament - utilise le formulaire d'ajout avec données pré-remplies
   const openEdit = (med: Medication) => {
     setEditMed(med);
-    setEditFields({
-      name: med.name,
-      quantity: med.quantity,
-      minQuantity: med.minQuantity,
-      unit: med.unit,
-      price: med.price ?? '',
-      expirationDate: med.expirationDate ?? ''
+    setShowAddMed(true);
+    // Pré-remplir TOUS les champs disponibles du médicament
+    setAddFields({
+      name: med.name || '',
+      quantity: med.quantity?.toString() || '',
+      minQuantity: med.minQuantity?.toString() || '',
+      unit: med.unit || '',
+      purchasePrice: med.purchasePrice?.toString() || '',
+      sellingPrice: med.sellingPrice?.toString() || '',
+      description: med.description || '',
+      category: med.category || '',
+      expirationDate: med.expirationDate || ''
     });
-    setEditError(null);
-  };
-  const closeEdit = () => {
-    setEditMed(null);
-    setEditFields({});
-    setEditError(null);
-    setEditing(false);
-  };
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setEditFields((prev: any) => ({ ...prev, [name]: value }));
-  };
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editMed) return;
-    setEditing(true);
-    setEditError(null);
-    try {
-      await apiClient.patch(`/api/medications/${editMed.id}`, {
-        ...editFields
-      });
-      closeEdit();
-      fetchMedications();
-    } catch (e: any) {
-      setEditError(e.response?.data?.error || 'Erreur lors de la modification');
-    } finally {
-      setEditing(false);
-    }
+    setAddError(null);
   };
 
   // Suppression médicament
@@ -187,16 +164,18 @@ const StockManagement: React.FC = () => {
   // Ajout médicament
   const openAddMed = () => {
     setShowAddMed(true);
-    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', price: '', purchasePrice: '', sellingPrice: '', expirationDate: '' });
+    setEditMed(null); // S'assurer qu'on n'est pas en mode édition
+    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', purchasePrice: '', sellingPrice: '', description: '', category: '', expirationDate: '' });
     setAddError(null);
   };
   const closeAddMed = () => {
     setShowAddMed(false);
-    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', price: '', purchasePrice: '', sellingPrice: '', expirationDate: '' });
+    setEditMed(null);
+    setAddFields({ name: '', quantity: '', minQuantity: '', unit: '', purchasePrice: '', sellingPrice: '', description: '', category: '', expirationDate: '' });
     setAddError(null);
     setAddingMed(false);
   };
-  const handleAddChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleAddChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setAddFields((prev: any) => ({ ...prev, [name]: value }));
   };
@@ -205,18 +184,26 @@ const StockManagement: React.FC = () => {
     setAddingMed(true);
     setAddError(null);
     try {
-      await apiClient.post('/api/medications', {
-        ...addFields,
+      const medicationData = {
+        name: addFields.name,
         quantity: parseInt(addFields.quantity, 10),
-        minQuantity: parseInt(addFields.minQuantity, 10),
-        price: addFields.price ? parseFloat(addFields.price) : undefined,
+        unit: addFields.unit,
         purchasePrice: addFields.purchasePrice ? parseFloat(addFields.purchasePrice) : undefined,
-        sellingPrice: addFields.sellingPrice ? parseFloat(addFields.sellingPrice) : undefined
-      });
+        sellingPrice: addFields.sellingPrice ? parseFloat(addFields.sellingPrice) : undefined,
+        description: addFields.description || undefined,
+        category: addFields.category || undefined
+      };
+
+      // Si editMed existe, c'est une modification, sinon c'est un ajout
+      if (editMed) {
+        await apiClient.patch(`/api/medications/${editMed.id}`, medicationData);
+      } else {
+        await apiClient.post('/api/medications', medicationData);
+      }
       closeAddMed();
       fetchMedications();
     } catch (e: any) {
-      setAddError(e.response?.data?.error || 'Erreur lors de l\'ajout du médicament');
+      setAddError(e.response?.data?.error || (editMed ? 'Erreur lors de la modification du médicament' : 'Erreur lors de l\'ajout du médicament'));
     } finally {
       setAddingMed(false);
     }
@@ -414,103 +401,6 @@ const StockManagement: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Modale édition médicament */}
-      {editMed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg relative">
-            <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-              onClick={closeEdit}
-            >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <h2 className="text-xl font-bold mb-4">Modifier le médicament</h2>
-            <form onSubmit={handleEdit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Nom</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={editFields.name}
-                  onChange={handleEditChange}
-                  required
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quantité</label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={editFields.quantity}
-                  onChange={handleEditChange}
-                  required
-                  min="0"
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quantité minimale (alerte)</label>
-                <input
-                  type="number"
-                  name="minQuantity"
-                  value={editFields.minQuantity}
-                  onChange={handleEditChange}
-                  required
-                  min="0"
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Unité</label>
-                <select
-                  name="unit"
-                  value={editFields.unit}
-                  onChange={handleEditChange}
-                  required
-                  className="input-field"
-                >
-                  <option value="">Sélectionner une unité</option>
-                  {unitOptions.map((u) => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Prix ($)</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={editFields.price}
-                  onChange={handleEditChange}
-                  min="0"
-                  step="0.01"
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Date d'expiration</label>
-                <input
-                  type="date"
-                  name="expirationDate"
-                  value={editFields.expirationDate}
-                  onChange={handleEditChange}
-                  className="input-field"
-                />
-              </div>
-              {editError && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{editError}</div>}
-              <div className="flex justify-end gap-2">
-                <button type="button" className="btn-secondary" onClick={closeEdit}>Annuler</button>
-                <button type="submit" className="btn-primary" disabled={editing}>
-                  {editing ? 'Modification...' : 'Enregistrer'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       {/* Modale suppression médicament */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -551,7 +441,7 @@ const StockManagement: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <h2 className="text-xl font-bold mb-4 pr-8">Ajouter un médicament</h2>
+            <h2 className="text-xl font-bold mb-4 pr-8">{editMed ? 'Modifier le médicament' : 'Ajouter un médicament'}</h2>
             
             {/* Conteneur scrollable pour le formulaire */}
             <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
@@ -617,21 +507,8 @@ const StockManagement: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Troisième ligne - Prix général et Prix d'achat */}
+                {/* Troisième ligne - Prix d'achat et Prix de vente */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Prix général ($)</label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={addFields.price}
-                      onChange={handleAddChange}
-                      min="0"
-                      step="0.01"
-                      className="input-field w-full"
-                      placeholder="0.00"
-                    />
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Prix d'achat ($)</label>
                     <input
@@ -645,10 +522,6 @@ const StockManagement: React.FC = () => {
                       placeholder="0.00"
                     />
                   </div>
-                </div>
-
-                {/* Quatrième ligne - Prix de vente et Date d'expiration */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Prix de vente ($)</label>
                     <input
@@ -662,6 +535,10 @@ const StockManagement: React.FC = () => {
                       placeholder="0.00"
                     />
                   </div>
+                </div>
+
+                {/* Quatrième ligne - Date d'expiration et Catégorie */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date d'expiration</label>
                     <input
@@ -670,6 +547,32 @@ const StockManagement: React.FC = () => {
                       value={addFields.expirationDate}
                       onChange={handleAddChange}
                       className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                    <input
+                      type="text"
+                      name="category"
+                      value={addFields.category}
+                      onChange={handleAddChange}
+                      className="input-field w-full"
+                      placeholder="Catégorie du médicament (optionnel)"
+                    />
+                  </div>
+                </div>
+
+                {/* Cinquième ligne - Description */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      name="description"
+                      value={addFields.description}
+                      onChange={handleAddChange}
+                      rows={3}
+                      className="input-field w-full"
+                      placeholder="Description du médicament (optionnel)"
                     />
                   </div>
                 </div>
@@ -682,7 +585,7 @@ const StockManagement: React.FC = () => {
                     Annuler
                   </button>
                   <button type="submit" className="btn-primary px-6 py-2" disabled={addingMed}>
-                    {addingMed ? 'Ajout...' : 'Enregistrer'}
+                    {addingMed ? (editMed ? 'Modification...' : 'Ajout...') : (editMed ? 'Enregistrer les modifications' : 'Enregistrer')}
                   </button>
                 </div>
               </form>

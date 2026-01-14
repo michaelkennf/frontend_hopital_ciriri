@@ -99,7 +99,7 @@ const SupplyRequests: React.FC = () => {
 
   const fetchRequests = async () => {
     try {
-      const response = await apiClient.get('/apiClient/supply-requests');
+      const response = await apiClient.get('/api/supply-requests');
       setRequests(response.data.requests || []);
     } catch (error) {
       console.error('Erreur lors de la récupération des demandes:', error);
@@ -108,7 +108,7 @@ const SupplyRequests: React.FC = () => {
 
   const fetchMedications = async () => {
     try {
-      const response = await apiClient.get('/apiClient/medications');
+      const response = await apiClient.get('/api/medications');
       console.log('=== DONNÉES MÉDICAMENTS API ===');
       console.log('Réponse complète:', response.data);
       console.log('Médicaments reçus:', response.data.medications);
@@ -123,25 +123,28 @@ const SupplyRequests: React.FC = () => {
     console.log('Index:', index, 'Field:', field, 'Value:', value, 'Type:', typeof value);
     
     const newItems = [...formData.items];
+    
+    // Ne pas permettre la modification de quantityAvailable (rempli automatiquement)
+    if (field === 'quantityAvailable') {
+      console.log('Tentative de modification de quantityAvailable ignorée (champ en lecture seule)');
+      return;
+    }
+    
     const oldValue = newItems[index][field];
     newItems[index] = { ...newItems[index], [field]: value };
     
     console.log('Ancienne valeur:', oldValue, 'Nouvelle valeur:', newItems[index][field]);
     
-    // Calculer le prix total si quantité et prix unitaire sont fournis
+    // Calculer automatiquement le prix total (P.T) = P.U × Quantité demandée
     if (field === 'quantityRequested' || field === 'unitPrice') {
       const quantity = field === 'quantityRequested' ? Number(value) : newItems[index].quantityRequested;
       const unitPrice = field === 'unitPrice' ? Number(value) : newItems[index].unitPrice;
       newItems[index].totalPrice = quantity * unitPrice;
+      console.log(`Calcul P.T: ${quantity} × ${unitPrice} = ${newItems[index].totalPrice}`);
     }
     
     console.log('Nouvel item complet:', newItems[index]);
     setFormData({ ...formData, items: newItems });
-    
-    // Log pour vérifier que l'état a été mis à jour
-    setTimeout(() => {
-      console.log('État formData après mise à jour:', formData.items[index]);
-    }, 0);
   };
 
   const calculateTotal = () => {
@@ -167,68 +170,87 @@ const SupplyRequests: React.FC = () => {
       
       if (medication) {
         console.log('=== MISE À JOUR DES CHAMPS ===');
-        console.log('Mise à jour designation:', medication.name);
-        handleItemChange(index, 'designation', medication.name);
+        // Mettre à jour tous les champs en une seule fois pour éviter les problèmes de synchronisation
+        const newItems = [...formData.items];
+        newItems[index] = {
+          ...newItems[index],
+          designation: medication.name,
+          quantityAvailable: medication.quantity || 0,
+          unitPrice: medication.purchasePrice || medication.price || 0,
+          // Réinitialiser la quantité demandée et le total pour permettre une nouvelle saisie
+          quantityRequested: newItems[index].quantityRequested || 0,
+          totalPrice: 0 // Sera recalculé quand la quantité demandée sera saisie
+        };
         
-        // Remplir automatiquement la quantité disponible
-        console.log('Mise à jour quantité disponible:', medication.quantity, 'Type:', typeof medication.quantity);
-        handleItemChange(index, 'quantityAvailable', medication.quantity);
-        console.log('Médicament sélectionné:', {
-          name: medication.name,
-          quantity: medication.quantity,
-          price: medication.price,
-          purchasePrice: medication.purchasePrice,
-          unit: medication.unit
-        });
-        
-        // Utiliser le prix d'achat au lieu du prix général pour les demandes d'approvisionnement
-        if (medication.purchasePrice) {
-          console.log('Mise à jour prix d\'achat:', medication.purchasePrice);
-          handleItemChange(index, 'unitPrice', medication.purchasePrice);
-        } else if (medication.price) {
-          // Fallback sur le prix général si le prix d'achat n'est pas défini
-          console.log('Prix d\'achat non défini, utilisation du prix général:', medication.price);
-          handleItemChange(index, 'unitPrice', medication.price);
+        // Recalculer le total si une quantité demandée existe déjà
+        if (newItems[index].quantityRequested > 0) {
+          newItems[index].totalPrice = newItems[index].quantityRequested * newItems[index].unitPrice;
         }
+        
+        setFormData({ ...formData, items: newItems });
       } else {
         // Si le médicament n'est pas trouvé, utiliser directement la valeur sélectionnée
         console.log('Médicament non trouvé, utilisation directe:', medicationName);
         handleItemChange(index, 'designation', medicationName);
       }
     } else {
-      // Si aucune sélection, vider la désignation et la quantité disponible
-      console.log('Vidage de la désignation et quantité disponible pour index:', index);
-      handleItemChange(index, 'designation', '');
-      handleItemChange(index, 'quantityAvailable', 0);
-      handleItemChange(index, 'unitPrice', 0);
+      // Si aucune sélection, réinitialiser tous les champs
+      console.log('Vidage de tous les champs pour index:', index);
+      const newItems = [...formData.items];
+      newItems[index] = {
+        designation: '',
+        quantityAvailable: 0,
+        quantityRequested: 0,
+        unitPrice: 0,
+        totalPrice: 0,
+        observation: newItems[index].observation // Conserver l'observation
+      };
+      setFormData({ ...formData, items: newItems });
     }
   };
 
   const handleAddMedication = async () => {
     try {
-      const response = await apiClient.post('/apiClient/medications', {
+      const response = await apiClient.post('/api/medications', {
         name: newMedication.name,
         quantity: 0,
         minQuantity: 0,
         unit: newMedication.unit,
-        price: newMedication.price ? parseFloat(newMedication.price) : 0,
-        purchasePrice: newMedication.price ? parseFloat(newMedication.price) : 0 // Utiliser le même prix pour l'achat
+        purchasePrice: newMedication.purchasePrice ? parseFloat(newMedication.purchasePrice) : 0,
+        sellingPrice: newMedication.price ? parseFloat(newMedication.price) : 0
       });
       
       // Ajouter le nouveau médicament à la liste
-      setMedications([...medications, response.data.medication]);
+      const newMed = {
+        id: response.data.medication.id,
+        name: response.data.medication.name,
+        unit: response.data.medication.unit,
+        quantity: response.data.medication.quantity || 0,
+        purchasePrice: response.data.medication.purchasePrice || 0,
+        price: response.data.medication.sellingPrice || 0
+      };
+      setMedications([...medications, newMed]);
       setShowAddMedication(false);
       setNewMedication({ name: '', unit: '', price: '', purchasePrice: '' });
       
-      // Trouver l'index de l'item actuel et mettre à jour la désignation
-      const currentItemIndex = formData.items.findIndex(item => item.designation === '');
+      // Trouver l'index de l'item actuel et mettre à jour avec le nouveau médicament
+      const currentItemIndex = formData.items.findIndex((item, idx) => 
+        selectedMedications[idx] === 'autre' && item.designation === ''
+      );
       if (currentItemIndex !== -1) {
-        handleItemChange(currentItemIndex, 'designation', newMedication.name);
-        // Remplir la quantité disponible (0 pour un nouveau médicament)
-        handleItemChange(currentItemIndex, 'quantityAvailable', 0);
-        if (newMedication.price) {
-          handleItemChange(currentItemIndex, 'unitPrice', parseFloat(newMedication.price));
-        }
+        // Mettre à jour la sélection et remplir automatiquement les champs
+        setSelectedMedications(prev => ({
+          ...prev,
+          [currentItemIndex]: newMed.name
+        }));
+        const newItems = [...formData.items];
+        newItems[currentItemIndex] = {
+          ...newItems[currentItemIndex],
+          designation: newMed.name,
+          quantityAvailable: 0,
+          unitPrice: newMed.purchasePrice || 0
+        };
+        setFormData({ ...formData, items: newItems });
       }
     } catch (error) {
       console.error('Erreur lors de l\'ajout du médicament:', error);
@@ -259,7 +281,7 @@ const SupplyRequests: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await apiClient.delete(`/apiClient/supply-requests/${id}`);
+      await apiClient.delete(`/api/supply-requests/${id}`);
       setSuccess('Demande supprimée avec succès !');
       setRequests(requests.filter(r => r.id !== id));
     } catch (error: any) {
@@ -364,12 +386,12 @@ const SupplyRequests: React.FC = () => {
       
       if (editRequest) {
         console.log('Mode édition - PATCH');
-        const response = await apiClient.patch(`/apiClient/supply-requests/${editRequest.id}`, requestData);
+        const response = await apiClient.patch(`/api/supply-requests/${editRequest.id}`, requestData);
         console.log('Réponse PATCH:', response.data);
         setSuccess('Demande modifiée avec succès !');
       } else {
         console.log('Mode création - POST');
-        const response = await apiClient.post('/apiClient/supply-requests', requestData);
+        const response = await apiClient.post('/api/supply-requests', requestData);
         console.log('Réponse POST:', response.data);
         setSuccess('Demande d\'approvisionnement créée avec succès !');
       }
@@ -407,7 +429,7 @@ const SupplyRequests: React.FC = () => {
 
   const handleApprove = async (requestId: number) => {
     try {
-      await apiClient.patch(`/apiClient/supply-requests/${requestId}/approve`);
+      await apiClient.patch(`/api/supply-requests/${requestId}/approve`);
       setSuccess('Demande approuvée avec succès !');
       fetchRequests();
     } catch (error: any) {
@@ -474,14 +496,14 @@ const SupplyRequests: React.FC = () => {
                 <td>${item.designation}</td>
                 <td>${item.quantityAvailable}</td>
                 <td>${item.quantityRequested}</td>
-                <td>${item.unitPrice.toFixed(2)}</td>
-                <td>${item.totalPrice.toFixed(2)}</td>
-                <td>${item.observation}</td>
+                <td>${(item.unitPrice || 0).toFixed(2)}</td>
+                <td>${(item.totalPrice || 0).toFixed(2)}</td>
+                <td>${item.observation || ''}</td>
               </tr>
             `).join('')}
             <tr class="total">
               <td colspan="5">Total général</td>
-              <td>${request.totalAmount.toFixed(2)}</td>
+              <td>${(request.totalAmount || 0).toFixed(2)}</td>
               <td></td>
             </tr>
           </tbody>
@@ -597,8 +619,8 @@ const SupplyRequests: React.FC = () => {
                            <input
                              type="number"
                              value={item.quantityAvailable}
-                             onChange={(e) => handleItemChange(index, 'quantityAvailable', Number(e.target.value))}
-                             className="w-full text-sm border-0 focus:ring-0 px-2 py-1"
+                             readOnly
+                             className="w-full text-sm border-0 focus:ring-0 px-2 py-1 bg-gray-50"
                              min="0"
                            />
                          </td>
@@ -622,7 +644,7 @@ const SupplyRequests: React.FC = () => {
                            />
                          </td>
                          <td className="border px-3 py-2 text-sm font-medium">
-                           {item.totalPrice.toFixed(2)}
+                           {(item.totalPrice || 0).toFixed(2)}
                          </td>
                          <td className="border px-3 py-2">
                            <input
@@ -637,7 +659,7 @@ const SupplyRequests: React.FC = () => {
                     ))}
                     <tr className="bg-gray-50 font-bold">
                       <td colSpan={5} className="border px-3 py-3 text-sm">Total général</td>
-                      <td className="border px-3 py-3 text-sm">{calculateTotal().toFixed(2)}</td>
+                      <td className="border px-3 py-3 text-sm">{(calculateTotal() || 0).toFixed(2)}</td>
                       <td className="border px-3 py-3"></td>
                     </tr>
                   </tbody>
@@ -737,14 +759,14 @@ const SupplyRequests: React.FC = () => {
                       <td className="border px-3 py-2 text-sm">{item.designation}</td>
                       <td className="border px-3 py-2 text-sm">{item.quantityAvailable}</td>
                       <td className="border px-3 py-2 text-sm">{item.quantityRequested}</td>
-                      <td className="border px-3 py-2 text-sm">{item.unitPrice.toFixed(2)}</td>
-                      <td className="border px-3 py-2 text-sm">{item.totalPrice.toFixed(2)}</td>
+                      <td className="border px-3 py-2 text-sm">{(item.unitPrice || 0).toFixed(2)}</td>
+                      <td className="border px-3 py-2 text-sm">{(item.totalPrice || 0).toFixed(2)}</td>
                       <td className="border px-3 py-2 text-sm">{item.observation}</td>
                     </tr>
                   ))}
                   <tr className="bg-gray-50 font-bold">
                     <td colSpan={5} className="border px-3 py-3 text-sm">Total général</td>
-                    <td className="border px-3 py-3 text-sm">{request.totalAmount.toFixed(2)}</td>
+                    <td className="border px-3 py-3 text-sm">{(request.totalAmount || 0).toFixed(2)}</td>
                     <td className="border px-3 py-3"></td>
                   </tr>
                 </tbody>
