@@ -190,13 +190,18 @@ const PatientsManagementMaternite: React.FC = () => {
                     <td className="px-4 py-2">{p.weight}</td>
                     <td className="px-4 py-2">{p.address}</td>
                     <td className="px-4 py-2">{p.phone}</td>
-                    <td className="px-4 py-2">{p.hospitalization?.roomType?.name || 'N/A'}</td>
-                                          <td className="px-4 py-2">
-                        {p.hospitalization?.startDate ? 
-                          new Date(p.hospitalization.startDate).toLocaleDateString('fr-FR') : 
-                          'N/A'
-                        }
-                      </td>
+                    <td className="px-4 py-2">
+                      {p.hospitalization?.roomType?.name || 
+                       (p.hospitalization?.roomTypeId ? 'Chargement...' : 'N/A')}
+                    </td>
+                    <td className="px-4 py-2">
+                      {p.hospitalization?.startDate ? 
+                        new Date(p.hospitalization.startDate).toLocaleDateString('fr-FR') : 
+                        (p.hospitalization?.entryDate ? 
+                          new Date(p.hospitalization.entryDate).toLocaleDateString('fr-FR') : 
+                          'N/A')
+                      }
+                    </td>
                     <td className="px-4 py-2">
                       <button className="btn-secondary btn-xs" onClick={() => {
                         setEditForm({ ...p, sexe: p.gender, dateNaissance: p.dateOfBirth, poids: p.weight, adresse: p.address, telephone: p.phone });

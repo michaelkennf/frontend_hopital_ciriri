@@ -128,13 +128,126 @@ const Attendance: React.FC = () => {
     doc.save(`fiche_presence_${name || employeeName || 'employe'}_${month+1}_${year}.pdf`);
   };
 
-  const handlePrintAll = async () => {
-    setPrintingAll(true);
-    for (const emp of employees) {
-      await new Promise(resolve => setTimeout(resolve, 300)); // pour éviter les collisions de téléchargement
-      handlePrintAttendanceSheet(`${emp.firstName} ${emp.lastName}`, emp.function);
+  // Fonction pour créer une page de fiche de présence dans un document existant
+  const addAttendancePageToDoc = (doc: jsPDF, name: string, role: string, isFirstPage: boolean = false) => {
+    if (!isFirstPage) {
+      doc.addPage(); // Ajouter une nouvelle page sauf pour la première
     }
-    setPrintingAll(false);
+    
+    const days = getDaysInMonth(month, year);
+    const startY = 60;
+    const rowHeight = 6;
+    const colWidths = [12, 20, 28, 28, 28, 28, 26];
+    const colX = [15];
+    for (let i = 0; i < colWidths.length; i++) {
+      colX.push(colX[i] + colWidths[i]);
+    }
+    const headers = ['JOURS', 'Date', "Heure d'arrivée", 'Signature', 'Heure de sortie', 'Signature', 'Observation'];
+
+    // Entête institutionnelle optimisée
+    doc.addImage('/logo_polycliniques.jpg', 'JPEG', 10, 5, 25, 25);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('REPUBLIQUE DEMOCRATIQUE DU CONGO', 40, 10);
+    doc.text('PROVINCE DU SUD-KIVU', 40, 14);
+    doc.text('VILLE DE BUKAVU', 40, 18);
+    doc.text('ZONE DE SANTE URBAINE DE KADUTU', 40, 22);
+    doc.setTextColor(230,0,0);
+    doc.text('FONDATION UMOJA', 40, 26);
+    doc.setTextColor(0,153,0);
+    doc.text('"F.U" asbl', 40, 30);
+    doc.setTextColor(0,0,0);
+    doc.text('DEPARTEMENT DES OEUVRES MEDICALES', 40, 34);
+    doc.setFontSize(11);
+    doc.setTextColor(0,153,0);
+    doc.text('POLYCLINIQUE DES APOTRES', 40, 38);
+    doc.setTextColor(0,0,0);
+    doc.setDrawColor(230,0,0);
+    doc.setLineWidth(1.2);
+    doc.line(10, 42, 200, 42);
+    
+    // Infos employé
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Nom : ${name}`, 15, 50);
+    doc.text(`Fonction : ${role}`, 120, 50);
+    
+    // Tableau optimisé
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setDrawColor(0,0,0);
+    doc.setLineWidth(0.3);
+    
+    // En-tête du tableau
+    headers.forEach((h, i) => {
+      const xCenter = colX[i] + colWidths[i]/2;
+      doc.text(h, xCenter, startY + rowHeight/2, { align: 'center', baseline: 'middle' });
+    });
+    
+    // Bordures de l'en-tête
+    for (let i = 0; i < colX.length; i++) {
+      doc.line(colX[i], startY, colX[i], startY + rowHeight + rowHeight * days.length);
+    }
+    doc.line(colX[0], startY, colX[colX.length-1], startY); // haut
+    doc.line(colX[0], startY + rowHeight, colX[colX.length-1], startY + rowHeight); // sous en-tête
+    
+    // Lignes du tableau avec tous les jours
+    let y = startY + rowHeight;
+    doc.setFontSize(7);
+    days.forEach(({ day, date }) => {
+      doc.text(day, colX[0] + colWidths[0]/2, y + rowHeight/2, { align: 'center', baseline: 'middle' });
+      doc.text(date, colX[1] + colWidths[1]/2, y + rowHeight/2, { align: 'center', baseline: 'middle' });
+      doc.line(colX[0], y, colX[colX.length-1], y);
+      y += rowHeight;
+    });
+    doc.line(colX[0], y, colX[colX.length-1], y);
+    for (let i = 0; i < colX.length; i++) {
+      doc.line(colX[i], startY, colX[i], y);
+    }
+    
+    // Footer optimisé
+    const footerY = 290;
+    doc.setFontSize(9);
+    doc.setTextColor(0,0,0);
+    doc.text('Adresse : DRCONGO/SK/BKV/Av. BUHOZI/KAJANGU/CIRIRI', 105, footerY - 8, { align: 'center' });
+    doc.text('Tél : (+243) 975 822 376, 843 066 779', 105, footerY - 4, { align: 'center' });
+    doc.text('Email : polycliniquedesapotres1121@gmail.com', 105, footerY, { align: 'center' });
+  };
+
+  const handlePrintAll = async () => {
+    if (employees.length === 0) {
+      alert('Aucun employé à imprimer.');
+      return;
+    }
+
+    setPrintingAll(true);
+    try {
+      // Créer un seul document PDF
+      const doc = new jsPDF('p', 'mm', 'a4');
+      
+      // Ajouter une page pour chaque employé
+      employees.forEach((emp, index) => {
+        if (index > 0) {
+          doc.addPage();
+        }
+        addAttendancePageToDoc(
+          doc, 
+          `${emp.firstName} ${emp.lastName}`, 
+          emp.function,
+          index === 0
+        );
+      });
+      
+      // Sauvegarder le document unique
+      const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
+                          'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+      doc.save(`fiches_presence_${monthNames[month]}_${year}.pdf`);
+    } catch (error) {
+      console.error('Erreur lors de l\'impression:', error);
+      alert('Erreur lors de la génération du PDF.');
+    } finally {
+      setPrintingAll(false);
+    }
   };
 
   return (

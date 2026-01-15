@@ -240,19 +240,7 @@ function PatientsExamens({
   onEditResultChange: (result: string) => void;
   canModifyExam: (exam: any) => boolean;
 }) {
-  // État pour forcer la mise à jour de l'interface en temps réel
-  const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // Mise à jour en temps réel pour maintenir l'interface active
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000); // Mise à jour toutes les secondes
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  // Fonction pour vérifier si un examen peut être modifié (dans les 5 minutes)
+  // Fonction pour vérifier si un examen peut être modifié (désactivée - non utilisée)
   const canEditExam = (exam: Exam, allExams: any[]) => {
     // Désactivé - plus de modification des résultats
     return false;
@@ -271,7 +259,7 @@ function PatientsExamens({
   return (
     <div className="p-6">
       <h2 className="font-semibold text-lg mb-2">Patients & Examens</h2>
-      <p className="text-gray-600 mb-6">Interface pour réaliser les examens programmés et modifier les résultats dans les 5 minutes après soumission.</p>
+      <p className="text-gray-600 mb-6">Interface pour réaliser les examens programmés et modifier les résultats.</p>
       
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
@@ -541,12 +529,12 @@ function PatientsExamens({
                                 </svg>
                                 <strong className="text-blue-800 text-sm">Résultat :</strong>
                               </div>
-                              {/* Bouton de modification si dans les 5 minutes */}
+                              {/* Bouton de modification (toujours disponible pour les examens terminés) */}
                               {canModifyExam(exam) && (
                                 <button
                                   onClick={() => onStartEdit(exam)}
                                   className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
-                                  title="Modifier le résultat (dans les 5 minutes après soumission)"
+                                  title="Modifier le résultat"
                                 >
                                   ✏️ Modifier
                                 </button>
@@ -813,16 +801,10 @@ const LaborantinDashboard: React.FC = () => {
     }
   };
 
-  // Fonction pour vérifier si un examen peut encore être modifié (dans les 5 minutes)
+  // Fonction pour vérifier si un examen peut être modifié (toujours possible si l'examen est terminé)
   const canModifyExam = (exam: any): boolean => {
-    if (!exam.updatedAt || exam.status !== 'completed') return false;
-    
-    const submissionTime = new Date(exam.updatedAt);
-    const now = new Date();
-    const timeDiff = now.getTime() - submissionTime.getTime();
-    const minutesDiff = timeDiff / (1000 * 60);
-    
-    return minutesDiff <= 5;
+    // Permettre la modification si l'examen est terminé (sans limite de temps)
+    return exam.status === 'completed';
   };
 
   // Fonction pour démarrer la modification d'un examen

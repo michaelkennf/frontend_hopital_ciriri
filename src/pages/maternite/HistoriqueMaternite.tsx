@@ -380,7 +380,7 @@ const HistoriqueMaternite: React.FC = () => {
             <thead>
               <tr className="bg-gray-100">
                 <th className="border px-4 py-3 text-sm font-medium">N° ANN</th>
-                <th className="border px-4 py-3 text-sm font-medium">N° MENS</th>
+                <th className="border px-4 py-3 text-sm font-medium">N° MENSUEL</th>
                 <th className="border px-4 py-3 text-sm font-medium">NOM, POST-NOM, PRÉNOM</th>
                 <th className="border px-4 py-3 text-sm font-medium">AGE</th>
                 <th className="border px-4 py-3 text-sm font-medium">ADRESSE</th>

@@ -37,8 +37,10 @@ const Invoices: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [printingId, setPrintingId] = useState<number | null>(null);
   const [printedInSession, setPrintedInSession] = useState<Set<number>>(new Set());
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [search, setSearch] = useState('');
@@ -137,6 +139,12 @@ const Invoices: React.FC = () => {
   }, [selectedPatientId]);
 
   const handlePrint = async (invoice: Invoice) => {
+    // Vérifier si la facture est annulée
+    if (invoice.status === 'cancelled') {
+      setError('Impossible d\'imprimer une facture annulée.');
+      return;
+    }
+    
     setPrintingId(invoice.id);
     
     try {
@@ -378,7 +386,9 @@ const Invoices: React.FC = () => {
         const qty = item.quantity || 0;
         const pu = item.unitPrice || 0;
         const total = item.totalPrice || 0;
-        const currency = item.type === 'consultation' ? 'FC' : '$';
+        // Extraire la devise du type (peut être "type:currency" ou juste "type")
+        const currency = extractCurrencyFromType(item.type || '');
+        const baseType = extractBaseType(item.type || '');
         
         win.document.write('<div class="ticket-item">');
         // Ligne principale : Description
@@ -387,7 +397,7 @@ const Invoices: React.FC = () => {
         </div>`);
         // Détails : Quantité et Prix unitaire
         // Pour l'hospitalisation, afficher clairement "X jour(s) x prix/jour"
-        if (item.type === 'hospitalization') {
+        if (baseType === 'hospitalization') {
           win.document.write(`<div class="ticket-item-details">
             ${qty} jour(s) x ${pu.toFixed(2)}${currency}/jour
           </div>`);
@@ -453,7 +463,74 @@ const Invoices: React.FC = () => {
     }
   };
 
+  const handleCancel = async (invoice: Invoice) => {
+    if (!confirm(`Êtes-vous sûr de vouloir annuler la facture ${invoice.invoiceNumber} ?`)) {
+      return;
+    }
+
+    setCancellingId(invoice.id);
+    setError(null);
+    setSuccess(null);
+    try {
+      console.log('🔄 Annulation de la facture:', invoice.id);
+      const response = await apiClient.patch(`/api/invoices/${invoice.id}/cancel`);
+      console.log('✅ Réponse annulation complète:', response);
+      console.log('✅ Données de réponse:', response.data);
+      
+      // Vérifier la réponse - la réponse peut être directement dans response.data ou response.data.data
+      const responseData = response.data?.data || response.data;
+      
+      if (responseData && (responseData.success === true || responseData.status === 'cancelled')) {
+        const successMessage = responseData.message || 'Facture annulée avec succès !';
+        setSuccess(successMessage);
+        console.log('✅ Message de succès:', successMessage);
+        
+        // Rafraîchir la liste des factures (ne pas bloquer sur une erreur de rafraîchissement)
+        try {
+          await fetchInvoices(selectedPatientId);
+        } catch (refreshError) {
+          console.warn('⚠️ Erreur lors du rafraîchissement, mais annulation réussie:', refreshError);
+          // Mettre à jour manuellement le statut dans la liste locale
+          setInvoices(prevInvoices => 
+            prevInvoices.map(inv => 
+              inv.id === invoice.id ? { ...inv, status: 'cancelled' } : inv
+            )
+          );
+        }
+        
+        // Effacer le message de succès après 3 secondes
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        // Si la réponse n'indique pas un succès clair, vérifier s'il y a une erreur
+        const errorMsg = responseData?.error || 'Réponse inattendue du serveur';
+        console.error('❌ Réponse inattendue:', responseData);
+        throw new Error(errorMsg);
+      }
+    } catch (e: any) {
+      console.error('❌ Erreur annulation complète:', e);
+      console.error('❌ Détails erreur:', {
+        message: e.message,
+        response: e.response,
+        responseData: e.response?.data
+      });
+      
+      const errorMessage = e.response?.data?.error || e.message || 'Erreur lors de l\'annulation de la facture';
+      setError(errorMessage);
+      console.error('❌ Message d\'erreur affiché:', errorMessage);
+      
+      // Effacer le message d'erreur après 5 secondes
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const handleEdit = (invoice: Invoice) => {
+    // Vérifier si la facture est annulée
+    if (invoice.status === 'cancelled') {
+      setError('Impossible de modifier une facture annulée.');
+      return;
+    }
     setEditInvoice(invoice);
     // Initialiser les items avec la devise basée sur le type
     // Extraire la devise du type si elle est stockée comme "type:currency"
@@ -549,6 +626,26 @@ const Invoices: React.FC = () => {
     }
   };
 
+  // Fonction utilitaire pour extraire la devise d'un type d'item
+  // Le type peut être au format "type" ou "type:currency"
+  const extractCurrencyFromType = (itemType: string): string => {
+    if (!itemType) return '$';
+    const typeParts = itemType.split(':');
+    if (typeParts.length > 1) {
+      // Format "type:currency" - retourner la devise
+      return typeParts[1];
+    }
+    // Format simple "type" - retourner la devise par défaut selon le type
+    return typeParts[0] === 'consultation' ? 'FC' : '$';
+  };
+
+  // Fonction utilitaire pour extraire le type de base (sans la devise)
+  const extractBaseType = (itemType: string): string => {
+    if (!itemType) return '';
+    const typeParts = itemType.split(':');
+    return typeParts[0] || itemType;
+  };
+
   // Filtrage et séparation des factures (à placer avant le return)
   // Fonction pour calculer le montant par devise
   const calculateInvoiceAmountByCurrency = (invoice: Invoice) => {
@@ -556,7 +653,8 @@ const Invoices: React.FC = () => {
     let otherAmountUSD = 0;
 
     invoice.items.forEach(item => {
-      if (item.type === 'consultation') {
+      const currency = extractCurrencyFromType(item.type || '');
+      if (currency === 'FC') {
         consultationAmountFC += item.totalPrice;
       } else {
         otherAmountUSD += item.totalPrice;
@@ -583,20 +681,14 @@ const Invoices: React.FC = () => {
 
   // Fonction pour formater le prix d'un item selon son type
   const formatItemPrice = (item: InvoiceItem) => {
-    if (item.type === 'consultation') {
-      return `${item.totalPrice} FC`;
-    } else {
-      return `${item.totalPrice} $`;
-    }
+    const currency = extractCurrencyFromType(item.type || '');
+    return `${item.totalPrice} ${currency}`;
   };
 
   // Fonction pour formater le prix unitaire d'un item selon son type
   const formatItemUnitPrice = (item: InvoiceItem) => {
-    if (item.type === 'consultation') {
-      return `${item.unitPrice} FC`;
-    } else {
-      return `${item.unitPrice} $`;
-    }
+    const currency = extractCurrencyFromType(item.type || '');
+    return `${item.unitPrice} ${currency}`;
   };
 
   // Fonction pour calculer et formater le total d'édition
@@ -659,10 +751,18 @@ const Invoices: React.FC = () => {
           style={{ minWidth: 200 }}
         />
       </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">
+          {success}
+        </div>
+      )}
       {loading ? (
         <div className="text-center">Chargement...</div>
-      ) : error ? (
-        <div className="text-red-500">{error}</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white border rounded shadow">
@@ -700,16 +800,21 @@ const Invoices: React.FC = () => {
                           <span className={
                             inv.status === 'pending' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded' :
                             inv.status === 'paid' ? 'bg-green-100 text-green-800 px-2 py-1 rounded' :
+                            inv.status === 'cancelled' ? 'bg-red-100 text-red-800 px-2 py-1 rounded' :
                             'bg-gray-100 text-gray-800 px-2 py-1 rounded'
                           }>
-                            {inv.status}
+                            {inv.status === 'cancelled' ? 'Annulée' : inv.status}
                           </span>
                         </td>
                         <td className="px-4 py-2 text-center">
                           {inv.printed ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}
                         </td>
                         <td className="px-4 py-2 space-x-2">
-                          {!inv.printed && !printedInSession.has(inv.id) && (
+                          {inv.status === 'cancelled' ? (
+                            <span className="text-red-600 font-bold text-sm">
+                              ❌ Facture annulée
+                            </span>
+                          ) : !inv.printed && !printedInSession.has(inv.id) ? (
                             <>
                               <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" title="Modifier" onClick={() => handleEdit(inv)}>
                                 Modifier
@@ -717,9 +822,16 @@ const Invoices: React.FC = () => {
                               <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded" title="Imprimer" onClick={() => handlePrint(inv)} disabled={printingId === inv.id}>
                                 {printingId === inv.id ? 'Impression...' : 'Imprimer'}
                               </button>
+                              <button 
+                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" 
+                                title="Annuler" 
+                                onClick={() => handleCancel(inv)} 
+                                disabled={cancellingId === inv.id}
+                              >
+                                {cancellingId === inv.id ? 'Annulation...' : 'Annuler'}
+                              </button>
                             </>
-                          )}
-                          {(inv.printed || printedInSession.has(inv.id)) && (
+                          ) : (
                             <span className="text-green-600 font-bold text-sm">
                               ✅ Facture imprimée
                             </span>
@@ -727,7 +839,7 @@ const Invoices: React.FC = () => {
                         </td>
                       </tr>
                       {/* Détail de tous les items de la facture */}
-                      <tr className="bg-gray-50">
+                      <tr className={inv.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}>
                         <td colSpan={7} className="px-4 py-2">
                           <div className="font-semibold text-blue-700 mb-1">Détails de la facture :</div>
                           <table className="w-full text-sm mb-2">
@@ -772,16 +884,21 @@ const Invoices: React.FC = () => {
                           <span className={
                             inv.status === 'pending' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded' :
                             inv.status === 'paid' ? 'bg-green-100 text-green-800 px-2 py-1 rounded' :
+                            inv.status === 'cancelled' ? 'bg-red-100 text-red-800 px-2 py-1 rounded' :
                             'bg-gray-100 text-gray-800 px-2 py-1 rounded'
                           }>
-                            {inv.status}
+                            {inv.status === 'cancelled' ? 'Annulée' : inv.status}
                           </span>
                         </td>
                         <td className="px-4 py-2 text-center">
                           {inv.printed ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}
                         </td>
                         <td className="px-4 py-2 space-x-2">
-                          {!inv.printed && !printedInSession.has(inv.id) && (
+                          {inv.status === 'cancelled' ? (
+                            <span className="text-red-600 font-bold text-sm">
+                              ❌ Facture annulée
+                            </span>
+                          ) : !inv.printed && !printedInSession.has(inv.id) ? (
                             <>
                               <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" title="Modifier" onClick={() => handleEdit(inv)}>
                                 Modifier
@@ -789,9 +906,16 @@ const Invoices: React.FC = () => {
                               <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded" title="Imprimer" onClick={() => handlePrint(inv)} disabled={printingId === inv.id}>
                                 {printingId === inv.id ? 'Impression...' : 'Imprimer'}
                               </button>
+                              <button 
+                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" 
+                                title="Annuler" 
+                                onClick={() => handleCancel(inv)} 
+                                disabled={cancellingId === inv.id}
+                              >
+                                {cancellingId === inv.id ? 'Annulation...' : 'Annuler'}
+                              </button>
                             </>
-                          )}
-                          {(inv.printed || printedInSession.has(inv.id)) && (
+                          ) : (
                             <span className="text-green-600 font-bold text-sm">
                               ✅ Facture imprimée
                             </span>
@@ -799,7 +923,7 @@ const Invoices: React.FC = () => {
                         </td>
                       </tr>
                       {/* Détail de tous les items de la facture */}
-                      <tr className="bg-gray-50">
+                      <tr className={inv.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}>
                         <td colSpan={7} className="px-4 py-2">
                           <div className="font-semibold text-blue-700 mb-1">Détails de la facture :</div>
                           <table className="w-full text-sm mb-2">

@@ -210,6 +210,7 @@ const StockManagement: React.FC = () => {
   };
 
   const unitOptions = [
+    'pièce(s)',
     'comprimé(s)',
     'boîte(s)',
     'flacon(s)',
@@ -220,6 +221,30 @@ const StockManagement: React.FC = () => {
     'mg',
     'tube(s)'
   ];
+
+  // Fonction pour formater le prix en préservant toutes les décimales significatives
+  const formatPrice = (price: number): string => {
+    if (price === null || price === undefined || isNaN(price)) return '0';
+    
+    // Convertir en string pour préserver toutes les décimales exactement telles qu'elles sont
+    const priceStr = String(price);
+    
+    // Si c'est un nombre entier, retourner tel quel
+    if (!priceStr.includes('.')) {
+      return priceStr;
+    }
+    
+    // Pour les nombres décimaux, préserver toutes les décimales
+    // Supprimer seulement les zéros de fin inutiles (mais garder au moins 2 décimales si c'est un nombre décimal)
+    const parts = priceStr.split('.');
+    if (parts.length === 2) {
+      // Garder toutes les décimales significatives (sans les zéros de fin)
+      const decimals = parts[1].replace(/0+$/, '');
+      return decimals ? `${parts[0]}.${decimals}` : parts[0];
+    }
+    
+    return priceStr;
+  };
 
   return (
     <div>
@@ -259,10 +284,14 @@ const StockManagement: React.FC = () => {
                   <td className="px-4 py-2">{m.quantity}</td>
                   <td className="px-4 py-2">{m.unit}</td>
                   <td className="px-4 py-2">
-                    {m.purchasePrice ? `$${m.purchasePrice.toFixed(2)}` : '-'}
+                    {m.purchasePrice !== null && m.purchasePrice !== undefined 
+                      ? `$${formatPrice(m.purchasePrice)}` 
+                      : '-'}
                   </td>
                   <td className="px-4 py-2">
-                    {m.sellingPrice ? `$${m.sellingPrice.toFixed(2)}` : '-'}
+                    {m.sellingPrice !== null && m.sellingPrice !== undefined 
+                      ? `$${formatPrice(m.sellingPrice)}` 
+                      : '-'}
                   </td>
                   <td className="px-4 py-2">
                     {m.quantity <= m.minQuantity ? (
@@ -517,10 +546,17 @@ const StockManagement: React.FC = () => {
                       value={addFields.purchasePrice}
                       onChange={handleAddChange}
                       min="0"
-                      step="0.01"
+                      step="any"
                       className="input-field w-full"
                       placeholder="0.00"
+                      onKeyDown={(e) => {
+                        // Permettre seulement les chiffres, point, virgule, et touches de contrôle
+                        if (!/[0-9.,]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                     />
+                    <p className="text-xs text-gray-500 mt-1">Entrez le prix d'achat (doit être positif ou zéro, aucune limite minimale)</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Prix de vente ($)</label>
@@ -530,7 +566,7 @@ const StockManagement: React.FC = () => {
                       value={addFields.sellingPrice}
                       onChange={handleAddChange}
                       min="0"
-                      step="0.01"
+                      step="any"
                       className="input-field w-full"
                       placeholder="0.00"
                     />

@@ -78,8 +78,12 @@ const FinancialDashboard: React.FC = () => {
               description: item.description
             });
             
-            if (types.includes(item.type)) {
-              incomeByType[item.type][m] += item.totalPrice || 0;
+            // Extraire le type de base (peut être au format "type:currency")
+            const itemType = item.type || '';
+            const baseType = itemType.includes(':') ? itemType.split(':')[0] : itemType;
+            
+            if (types.includes(baseType)) {
+              incomeByType[baseType][m] += item.totalPrice || 0;
             }
           });
         }
