@@ -137,15 +137,17 @@ const ExamsListHospitalisation: React.FC = () => {
         const newExam = res.data.patientExam;
         
         // Vérifier que l'examen a un patient et un type valides
-        if (newExam.patient && newExam.patient.folderNumber && newExam.exam && newExam.exam.name) {
+        // Utiliser exam ou examType selon ce qui est disponible
+        const examType = newExam.exam || newExam.examType;
+        if (newExam.patient && newExam.patient.folderNumber && examType && examType.name) {
           // Ajouter le nouvel examen à la liste existante
           const examToAdd = {
             id: newExam.id,
             patient: newExam.patient,
-            examType: newExam.exam,
+            examType: examType,
             date: newExam.date,
-            status: newExam.status,
-            results: newExam.results
+            status: newExam.status || 'scheduled',
+            results: newExam.results || null
           };
           
           setExams([examToAdd, ...exams]);

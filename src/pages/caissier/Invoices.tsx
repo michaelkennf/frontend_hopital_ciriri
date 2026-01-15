@@ -16,6 +16,7 @@ interface InvoiceItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  currency?: string; // Devise: 'FC' ou '$'
   consultationId?: number;
   examId?: number;
   medicationSaleId?: number;
@@ -46,6 +47,8 @@ const Invoices: React.FC = () => {
   const [editTotal, setEditTotal] = useState<number>(0);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  // État pour gérer les valeurs d'input avec virgule (format d'affichage)
+  const [priceInputs, setPriceInputs] = useState<{ [key: number]: string }>({});
   const [patientConsultations, setPatientConsultations] = useState<any[]>([]);
   const [patientExams, setPatientExams] = useState<any[]>([]);
   const [patientSales, setPatientSales] = useState<any[]>([]);
@@ -371,7 +374,7 @@ const Invoices: React.FC = () => {
       // Items en format ticket (sans tableau)
       invoice.items.forEach((item, index) => {
         console.log(`📝 Item ${index}:`, item);
-        const desc = item.description || 'N/A';
+        const desc = item.description || item.itemName || 'N/A';
         const qty = item.quantity || 0;
         const pu = item.unitPrice || 0;
         const total = item.totalPrice || 0;
@@ -383,12 +386,19 @@ const Invoices: React.FC = () => {
           <div class="ticket-item-desc">${desc}</div>
         </div>`);
         // Détails : Quantité et Prix unitaire
-        win.document.write(`<div class="ticket-item-details">
-          Qte: ${qty} x ${pu}${currency}
-        </div>`);
+        // Pour l'hospitalisation, afficher clairement "X jour(s) x prix/jour"
+        if (item.type === 'hospitalization') {
+          win.document.write(`<div class="ticket-item-details">
+            ${qty} jour(s) x ${pu.toFixed(2)}${currency}/jour
+          </div>`);
+        } else {
+          win.document.write(`<div class="ticket-item-details">
+            Qte: ${qty} x ${pu.toFixed(2)}${currency}
+          </div>`);
+        }
         // Prix total aligné à gauche
         win.document.write(`<div class="ticket-item-line">
-          <div class="ticket-item-price">${total}${currency}</div>
+          <div class="ticket-item-price">${total.toFixed(2)}${currency}</div>
         </div>`);
         win.document.write('</div>');
       });
@@ -445,28 +455,92 @@ const Invoices: React.FC = () => {
 
   const handleEdit = (invoice: Invoice) => {
     setEditInvoice(invoice);
-    setEditItems(invoice.items.map(item => ({ ...item })));
+    // Initialiser les items avec la devise basée sur le type
+    // Extraire la devise du type si elle est stockée comme "type:currency"
+    const initializedItems = invoice.items.map(item => {
+      const typeParts = (item.type || '').split(':');
+      const baseType = typeParts[0] || item.type || '';
+      const currency = typeParts[1] || (baseType === 'consultation' ? 'FC' : '$');
+      return { 
+        ...item, 
+        type: baseType, // Stocker seulement le type de base
+        currency: currency // Stocker la devise séparément
+      };
+    });
+    setEditItems(initializedItems);
+    
+    // Initialiser les valeurs d'input avec virgule pour chaque item
+    const initialPriceInputs: { [key: number]: string } = {};
+    initializedItems.forEach((item, idx) => {
+      // Toujours initialiser, même si unitPrice est 0, null ou undefined
+      const price = item.unitPrice || 0;
+      initialPriceInputs[idx] = price.toFixed(2).replace('.', ',');
+    });
+    setPriceInputs(initialPriceInputs);
+    
     setEditTotal(invoice.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0));
     setEditError(null);
     fetchPatientActs(invoice.patient.id);
   };
 
   const handleEditItemChange = (idx: number, field: string, value: any) => {
-    setEditItems(items => items.map((item, i) => i === idx ? { ...item, [field]: value, totalPrice: field === 'quantity' || field === 'unitPrice' ? value * (field === 'quantity' ? item.unitPrice : item.quantity) : item.totalPrice } : item));
-    setEditTotal(editItems.reduce((sum, item, i) => sum + (i === idx ? (field === 'quantity' || field === 'unitPrice' ? value * (field === 'quantity' ? item.unitPrice : item.quantity) : item.totalPrice) : item.totalPrice), 0));
+    setEditItems(items => {
+      const newItems = items.map((item, i) => {
+        if (i === idx) {
+          const updatedItem = { ...item, [field]: value };
+          // Recalculer le total si prix unitaire change (quantité = 1 par défaut)
+          if (field === 'unitPrice') {
+            const price = Number(value) || 0;
+            updatedItem.totalPrice = price; // Quantité = 1
+            updatedItem.quantity = 1; // S'assurer que la quantité est 1
+          } else if (field === 'totalPrice') {
+            // Si on modifie directement le totalPrice, mettre à jour aussi unitPrice
+            const total = Number(value) || 0;
+            updatedItem.totalPrice = total;
+            updatedItem.unitPrice = total; // Pour les factures, prix unitaire = total (quantité = 1)
+            updatedItem.quantity = 1;
+          }
+          return updatedItem;
+        }
+        return item;
+      });
+      // Recalculer le total global
+      const newTotal = newItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+      setEditTotal(newTotal);
+      return newItems;
+    });
   };
 
   const handleEditSave = async () => {
     setEditLoading(true);
     setEditError(null);
     try {
+      // Préparer les items avec la devise stockée dans le type si nécessaire
+      const itemsToSave = editItems.map(({ id, currency, ...rest }) => {
+        // Stocker la devise dans le type si elle diffère de la logique par défaut
+        // ou utiliser le type original avec la devise
+        const itemType = rest.type || '';
+        return {
+          ...rest,
+          // S'assurer que les valeurs numériques sont bien des nombres
+          unitPrice: parseFloat(String(rest.unitPrice || 0)),
+          totalPrice: parseFloat(String(rest.totalPrice || 0)),
+          quantity: parseInt(String(rest.quantity || 1), 10),
+          // Stocker la devise dans le type pour le backend (format: "type:currency" ou juste "type")
+          type: currency && currency !== (itemType === 'consultation' ? 'FC' : '$') 
+            ? `${itemType}:${currency}` 
+            : itemType
+        };
+      });
+      
       await apiClient.patch(`/api/invoices/${editInvoice!.id}`, {
-        items: editItems.map(({ id, ...rest }) => rest),
+        items: itemsToSave,
         totalAmount: editTotal
       });
       setEditInvoice(null);
       setEditItems([]);
       setEditTotal(0);
+      setPriceInputs({}); // Réinitialiser les inputs de prix
       fetchInvoices(selectedPatientId);
     } catch (e: any) {
       setEditError(e.response?.data?.error || 'Erreur lors de la modification de la facture');
@@ -527,23 +601,24 @@ const Invoices: React.FC = () => {
 
   // Fonction pour calculer et formater le total d'édition
   const formatEditTotal = () => {
-    let consultationAmountFC = 0;
-    let otherAmountUSD = 0;
+    let amountFC = 0;
+    let amountUSD = 0;
 
     editItems.forEach(item => {
-      if (item.type === 'consultation') {
-        consultationAmountFC += item.totalPrice;
+      const currency = item.currency || (item.type === 'consultation' ? 'FC' : '$');
+      if (currency === 'FC') {
+        amountFC += item.totalPrice || 0;
       } else {
-        otherAmountUSD += item.totalPrice;
+        amountUSD += item.totalPrice || 0;
       }
     });
 
-    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
-      return `${consultationAmountFC.toFixed(2)} FC + ${otherAmountUSD.toFixed(2)} $`;
-    } else if (consultationAmountFC > 0) {
-      return `${consultationAmountFC.toFixed(2)} FC`;
-    } else if (otherAmountUSD > 0) {
-      return `${otherAmountUSD.toFixed(2)} $`;
+    if (amountFC > 0 && amountUSD > 0) {
+      return `${amountFC.toFixed(2)} FC + ${amountUSD.toFixed(2)} $`;
+    } else if (amountFC > 0) {
+      return `${amountFC.toFixed(2)} FC`;
+    } else if (amountUSD > 0) {
+      return `${amountUSD.toFixed(2)} $`;
     } else {
       return '0.00 $';
     }
@@ -765,106 +840,145 @@ const Invoices: React.FC = () => {
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
             <h2 className="text-xl font-bold mb-4">Modifier la facture {editInvoice.invoiceNumber}</h2>
             {editError && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{editError}</div>}
-            <table className="w-full mb-4">
+            <table className="w-full mb-4 border-collapse">
               <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Type</th>
-                  <th>Quantité</th>
-                  <th>Prix unitaire</th>
-                  <th>Total</th>
+                <tr className="bg-gray-50">
+                  <th className="border px-3 py-2 text-left">Article</th>
+                  <th className="border px-3 py-2 text-left">Type</th>
+                  <th className="border px-3 py-2 text-left">Prix</th>
+                  <th className="border px-3 py-2 text-left">Devise</th>
                 </tr>
               </thead>
               <tbody>
-                {editItems.map((item, idx) => (
-                  <tr key={item.id}>
-                    <td>
-                      {/* Sélecteur d'acte selon le type */}
-                      {item.type === 'consultation' && (
-                        <select
-                          className="input-field"
-                          value={item.consultationId || ''}
+                {editItems.map((item, idx) => {
+                  const currentCurrency = item.currency || (item.type === 'consultation' ? 'FC' : '$');
+                  const totalPrice = (item.totalPrice || item.unitPrice || 0);
+                  const displayTotalPrice = totalPrice.toFixed(2).replace('.', ',');
+                  // Formater le prix unitaire pour l'affichage dans le champ (avec virgule)
+                  // Utiliser la valeur de priceInputs si disponible, sinon formater depuis unitPrice
+                  const unitPriceDisplay = priceInputs[idx] !== undefined 
+                    ? priceInputs[idx]
+                    : (item.unitPrice 
+                        ? item.unitPrice.toFixed(2).replace('.', ',')
+                        : '');
+                  return (
+                    <tr key={item.id} className="border-b">
+                      <td className="border px-3 py-2">
+                        <div className="font-medium">{item.description || item.itemName || 'Article'}</div>
+                        <div className="text-sm text-gray-600 font-semibold">{displayTotalPrice} {currentCurrency}</div>
+                      </td>
+                      <td className="border px-3 py-2">
+                        <input 
+                          className="input-field w-full" 
+                          value={item.type || ''} 
+                          onChange={e => handleEditItemChange(idx, 'type', e.target.value)} 
+                          placeholder="Type"
+                        />
+                      </td>
+                      <td className="border px-3 py-2">
+                        <input 
+                          className="input-field w-full" 
+                          type="text"
+                          inputMode="decimal"
+                          value={priceInputs[idx] !== undefined ? priceInputs[idx] : unitPriceDisplay} 
                           onChange={e => {
-                            const selected = patientConsultations.find(c => c.id === Number(e.target.value));
-                            if (selected) {
-                              handleEditItemChange(idx, 'consultationId', selected.id);
-                              handleEditItemChange(idx, 'description', selected.consultationType.name);
-                              handleEditItemChange(idx, 'quantity', 1);
-                              handleEditItemChange(idx, 'unitPrice', selected.consultationType.price);
-                              handleEditItemChange(idx, 'totalPrice', selected.consultationType.price);
+                            let inputValue = e.target.value;
+                            
+                            // Supprimer les espaces
+                            inputValue = inputValue.trim();
+                            
+                            // Remplacer tous les points par des virgules pour l'affichage
+                            inputValue = inputValue.replace(/\./g, ',');
+                            
+                            // Supprimer les virgules multiples (garder seulement la première)
+                            const commaIndex = inputValue.indexOf(',');
+                            if (commaIndex !== -1) {
+                              inputValue = inputValue.substring(0, commaIndex + 1) + inputValue.substring(commaIndex + 1).replace(/,/g, '');
+                            }
+                            
+                            // Supprimer tout ce qui n'est pas un chiffre ou une virgule
+                            inputValue = inputValue.replace(/[^\d,]/g, '');
+                            
+                            // Vérifier le format : nombres avec virgule comme séparateur décimal
+                            // Format accepté : "" ou "123" ou "123,45" ou "123," ou ",45" ou "0,5"
+                            const isValidFormat = inputValue === '' || 
+                              /^\d+$/.test(inputValue) || // Entier: "123"
+                              /^\d+,\d*$/.test(inputValue) || // Avec virgule: "123,45" ou "123,"
+                              /^,\d+$/.test(inputValue); // Commence par virgule: ",45"
+                            
+                            if (isValidFormat) {
+                              // Mettre à jour l'état d'affichage (avec virgule)
+                              setPriceInputs(prev => ({
+                                ...prev,
+                                [idx]: inputValue
+                              }));
+                              
+                              // Convertir en nombre pour le calcul (remplacer virgule par point)
+                              let numericValue = 0;
+                              if (inputValue !== '' && inputValue !== ',') {
+                                // Normaliser: remplacer virgule par point pour parseFloat
+                                let normalizedValue = inputValue.replace(',', '.');
+                                
+                                // Si la valeur se termine par une virgule (ex: "123,"), ajouter "0"
+                                if (inputValue.endsWith(',')) {
+                                  normalizedValue = normalizedValue + '0';
+                                }
+                                
+                                numericValue = parseFloat(normalizedValue);
+                                
+                                // Si parseFloat échoue, essayer de récupérer la partie entière
+                                if (isNaN(numericValue)) {
+                                  const intPart = inputValue.split(',')[0];
+                                  numericValue = intPart ? parseFloat(intPart) : 0;
+                                }
+                              }
+                              
+                              // Mettre à jour la valeur numérique dans l'item (même si 0)
+                              if (!isNaN(numericValue) && numericValue >= 0) {
+                                handleEditItemChange(idx, 'unitPrice', numericValue);
+                              }
                             }
                           }}
-                        >
-                          <option value="">Sélectionner une consultation</option>
-                          {patientConsultations.map(c => (
-                            <option key={c.id} value={c.id}>
-                              {c.consultationType.name} - {new Date(c.date).toLocaleDateString('fr-FR')} ({c.consultationType.price} FC)
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {item.type === 'exam' && (
-                        <select
-                          className="input-field"
-                          value={item.examId || ''}
-                          onChange={e => {
-                            const selected = patientExams.find(ex => ex.id === Number(e.target.value));
-                            if (selected) {
-                              handleEditItemChange(idx, 'examId', selected.id);
-                              handleEditItemChange(idx, 'description', selected.examType.name);
-                              handleEditItemChange(idx, 'quantity', 1);
-                              handleEditItemChange(idx, 'unitPrice', selected.examType.price);
-                              handleEditItemChange(idx, 'totalPrice', selected.examType.price);
+                          onBlur={() => {
+                            // Au blur, formater avec 2 décimales si nécessaire
+                            const currentValue = priceInputs[idx];
+                            if (currentValue !== undefined && currentValue !== '') {
+                              const numValue = parseFloat(currentValue.replace(',', '.'));
+                              if (!isNaN(numValue)) {
+                                const formatted = numValue.toFixed(2).replace('.', ',');
+                                setPriceInputs(prev => ({
+                                  ...prev,
+                                  [idx]: formatted
+                                }));
+                              }
                             }
                           }}
+                          placeholder="0,00"
+                        />
+                      </td>
+                      <td className="border px-3 py-2">
+                        <select 
+                          className="input-field w-full" 
+                          value={currentCurrency}
+                          onChange={e => handleEditItemChange(idx, 'currency', e.target.value)}
                         >
-                          <option value="">Sélectionner un examen</option>
-                          {patientExams.map(ex => (
-                            <option key={ex.id} value={ex.id}>
-                              {ex.examType.name} - {new Date(ex.date).toLocaleDateString('fr-FR')} ({ex.examType.price} $)
-                            </option>
-                          ))}
+                          <option value="FC">FC</option>
+                          <option value="$">$</option>
                         </select>
-                      )}
-                      {item.type === 'medication' && (
-                        <select
-                          className="input-field"
-                          value={item.medicationSaleId || ''}
-                          onChange={e => {
-                            const selected = patientSales.find(s => s.id === Number(e.target.value));
-                            if (selected) {
-                              handleEditItemChange(idx, 'medicationSaleId', selected.id);
-                              handleEditItemChange(idx, 'description', selected.medication.name);
-                              handleEditItemChange(idx, 'quantity', selected.quantity);
-                              handleEditItemChange(idx, 'unitPrice', selected.medication.price);
-                              handleEditItemChange(idx, 'totalPrice', selected.medication.price * selected.quantity);
-                            }
-                          }}
-                        >
-                          <option value="">Sélectionner une vente</option>
-                          {patientSales.map(s => (
-                            <option key={s.id} value={s.id}>
-                              {s.medication.name} x{s.quantity} - {new Date(s.date).toLocaleDateString('fr-FR')} ({s.medication.price * s.quantity} $)
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {/* Sinon, champ texte classique */}
-                      {item.type !== 'consultation' && item.type !== 'exam' && item.type !== 'medication' && (
-                        <input className="input-field" value={item.description} onChange={e => handleEditItemChange(idx, 'description', e.target.value)} />
-                      )}
-                    </td>
-                    <td><input className="input-field" value={item.type} onChange={e => handleEditItemChange(idx, 'type', e.target.value)} /></td>
-                    <td><input className="input-field" type="number" min="1" value={item.quantity} onChange={e => handleEditItemChange(idx, 'quantity', Number(e.target.value))} /></td>
-                    <td><input className="input-field" type="number" min="0" value={item.unitPrice} onChange={e => handleEditItemChange(idx, 'unitPrice', Number(e.target.value))} /></td>
-                    <td>{item.totalPrice} $</td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div className="flex justify-between items-center mb-4">
               <span className="font-bold">Total : {formatEditTotal()}</span>
-              <button className="btn-secondary" onClick={() => setEditInvoice(null)}>Annuler</button>
+              <button className="btn-secondary" onClick={() => {
+                setEditInvoice(null);
+                setEditItems([]);
+                setEditTotal(0);
+                setPriceInputs({}); // Réinitialiser les inputs de prix
+              }}>Annuler</button>
             </div>
             <button className="btn-primary" onClick={handleEditSave} disabled={editLoading}>{editLoading ? 'Enregistrement...' : 'Enregistrer'}</button>
           </div>

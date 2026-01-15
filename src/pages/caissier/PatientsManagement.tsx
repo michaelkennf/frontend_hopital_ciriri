@@ -319,6 +319,7 @@ const PatientsManagement: React.FC = () => {
                     value={form.dateNaissance}
                     onChange={handleChange}
                     required
+                    max={new Date().toISOString().split('T')[0]}
                     className="input-field"
                   />
                 </div>

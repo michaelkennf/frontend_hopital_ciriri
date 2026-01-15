@@ -248,7 +248,15 @@ const PatientsManagementMaternite: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Date de naissance</label>
-                  <input type="date" name="dateNaissance" value={form.dateNaissance} onChange={handleChange} required className="input-field" />
+                  <input 
+                    type="date" 
+                    name="dateNaissance" 
+                    value={form.dateNaissance} 
+                    onChange={handleChange} 
+                    required 
+                    max={new Date().toISOString().split('T')[0]}
+                    className="input-field" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Âge</label>
@@ -362,11 +370,19 @@ const PatientsManagementMaternite: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Date de naissance</label>
-                  <input type="date" name="dateNaissance" value={editForm.dateNaissance} onChange={(e) => {
-                    const newForm = {...editForm, dateNaissance: e.target.value};
-                    newForm.age = calculateAge(e.target.value).toString();
-                    setEditForm(newForm);
-                  }} required className="input-field" />
+                  <input 
+                    type="date" 
+                    name="dateNaissance" 
+                    value={editForm.dateNaissance} 
+                    onChange={(e) => {
+                      const newForm = {...editForm, dateNaissance: e.target.value};
+                      newForm.age = calculateAge(e.target.value).toString();
+                      setEditForm(newForm);
+                    }} 
+                    required 
+                    max={new Date().toISOString().split('T')[0]}
+                    className="input-field" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Âge</label>

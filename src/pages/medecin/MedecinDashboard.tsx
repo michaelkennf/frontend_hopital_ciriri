@@ -249,6 +249,14 @@ function PatientsDossiers() {
     }));
   };
 
+  // Fonction helper pour dédupliquer les consultations par ID
+  const deduplicateConsultations = (consultations: any[]) => {
+    if (!consultations || !Array.isArray(consultations)) return [];
+    return consultations.filter((consultation: any, index: number, self: any[]) => 
+      index === self.findIndex((c: any) => c.id === consultation.id)
+    );
+  };
+
   // Regrouper les examens par date
   const getExamsForDate = (consultationDate: string) => {
     if (!dossier?.exams) return [];
@@ -298,11 +306,12 @@ function PatientsDossiers() {
       .then(res => {
         // S'assurer que res.data existe et contient au moins les listes vides
         const dossierData = res.data || emptyDossier;
+        
         setDossier({
           ...emptyDossier,
           ...dossierData,
-          // S'assurer que toutes les listes existent
-          consultations: dossierData.consultations || [],
+          // S'assurer que toutes les listes existent et dédupliquées
+          consultations: deduplicateConsultations(dossierData.consultations || []),
           exams: dossierData.exams || [],
           medications: dossierData.medications || [],
           acts: dossierData.acts || [],
@@ -389,7 +398,11 @@ function PatientsDossiers() {
       // Rafraîchir le dossier
       const dossierRes = await apiClient.get(`/api/patients/${selectedPatient.id}/dossier`);
       console.log('Dossier mis à jour:', dossierRes.data);
-      setDossier(dossierRes.data);
+      const dossierData = dossierRes.data || {};
+      setDossier({
+        ...dossierData,
+        consultations: deduplicateConsultations(dossierData.consultations || [])
+      });
       
       // Réinitialiser le formulaire de consultation
       setNewConsultation({ typeId: '', notes: '' });
@@ -502,7 +515,11 @@ function PatientsDossiers() {
       // Rafraîchir le dossier
       if (selectedPatient) {
         const dossierRes = await apiClient.get(`/api/patients/${selectedPatient.id}/dossier`);
-        setDossier(dossierRes.data);
+        const dossierData = dossierRes.data || {};
+        setDossier({
+          ...dossierData,
+          consultations: deduplicateConsultations(dossierData.consultations || [])
+        });
       }
       
       setExamForms(forms => ({ 
@@ -536,7 +553,11 @@ function PatientsDossiers() {
       // Rafraîchir le dossier
       if (selectedPatient) {
         const dossierRes = await apiClient.get(`/api/patients/${selectedPatient.id}/dossier`);
-        setDossier(dossierRes.data);
+        const dossierData = dossierRes.data || {};
+        setDossier({
+          ...dossierData,
+          consultations: deduplicateConsultations(dossierData.consultations || [])
+        });
       }
       setTreatmentForms(forms => ({ 
         ...forms, 

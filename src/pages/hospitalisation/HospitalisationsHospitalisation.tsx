@@ -48,9 +48,10 @@ interface Hospitalization {
   };
   entryDate: string;
   exitDate?: string;
+  endDate?: string;
   days?: number;
   price?: number;
-  status: 'active' | 'discharged';
+  status: 'active' | 'discharged' | 'completed';
 }
 
 const HospitalisationsHospitalisation: React.FC = () => {
@@ -126,6 +127,10 @@ const HospitalisationsHospitalisation: React.FC = () => {
   };
 
   const handleOpenRoomModal = (hosp: Hospitalization) => {
+    // Empêcher la modification si l'hospitalisation est déjà sortie
+    if (hosp.exitDate || hosp.endDate || hosp.status === 'completed' || hosp.status === 'discharged') {
+      return;
+    }
     setSelectedHospitalization(hosp);
     setRoomForm({
       patientId: hosp.patient.id.toString(),
@@ -154,6 +159,10 @@ const HospitalisationsHospitalisation: React.FC = () => {
   };
 
   const handleOpenExitModal = (hosp: Hospitalization) => {
+    // Empêcher la sortie si l'hospitalisation est déjà sortie
+    if (hosp.exitDate || hosp.endDate || hosp.status === 'completed' || hosp.status === 'discharged') {
+      return;
+    }
     setSelectedHospitalization(hosp);
     setExitDays('');
     setShowExitModal(true);
@@ -191,9 +200,9 @@ const HospitalisationsHospitalisation: React.FC = () => {
     return age;
   };
 
-  const filteredHospitalizations = hospitalizations.filter(h => 
-    h.status === 'active' || !h.exitDate
-  );
+  // Afficher toutes les hospitalisations pour l'historique (actives et sorties)
+  // Les boutons seront masqués conditionnellement dans le rendu
+  const filteredHospitalizations = hospitalizations;
 
   // Calculer le prix total pour l'affichage
   const calculateTotalPrice = (days: string, roomType: any) => {
@@ -235,6 +244,7 @@ const HospitalisationsHospitalisation: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Âge</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type de chambre</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date d'entrée</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date de sortie</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Jours</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
@@ -251,9 +261,14 @@ const HospitalisationsHospitalisation: React.FC = () => {
                     <td className="px-4 py-2">
                       {hosp.entryDate ? new Date(hosp.entryDate).toLocaleDateString('fr-FR') : '-'}
                     </td>
+                    <td className="px-4 py-2">
+                      {(hosp.exitDate || hosp.endDate) 
+                        ? new Date(hosp.exitDate || hosp.endDate || '').toLocaleDateString('fr-FR') 
+                        : '-'}
+                    </td>
                     <td className="px-4 py-2">{hosp.days || '-'}</td>
                     <td className="px-4 py-2">
-                      {hosp.exitDate ? (
+                      {(hosp.exitDate || hosp.endDate || hosp.status === 'completed' || hosp.status === 'discharged') ? (
                         <span className="text-green-600 font-medium">Sortie</span>
                       ) : (
                         <div className="flex space-x-2">
@@ -276,8 +291,8 @@ const HospitalisationsHospitalisation: React.FC = () => {
                 ))}
                 {filteredHospitalizations.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      Aucune hospitalisation active
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                      Aucune hospitalisation
                     </td>
                   </tr>
                 )}

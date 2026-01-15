@@ -12,7 +12,8 @@ interface Patient {
 interface Medication {
   id: number;
   name: string;
-  price: number;
+  price?: number; // Pour compatibilité
+  sellingPrice?: number; // Prix de vente depuis l'API
   quantity: number;
 }
 
@@ -195,7 +196,8 @@ const MedicationsList: React.FC = () => {
 
   const getMedicationPrice = () => {
     const med = medications.find((m) => m.id === parseInt(form.medicationId));
-    return med ? med.price : 0;
+    // Utiliser sellingPrice en priorité, sinon price, sinon 0
+    return med ? (med.sellingPrice || med.price || 0) : 0;
   };
 
   // Impression de toute la liste
@@ -522,7 +524,11 @@ const MedicationsList: React.FC = () => {
                 {filteredSales.map((s) => (
                   <tr key={s.id}>
                     <td className="px-4 py-2 font-mono text-sm">
-                      {s.patient.folderNumber} - {s.patient.lastName || ''} {s.patient.firstName || ''}
+                      {s.patient && s.patient.folderNumber && s.patient.folderNumber !== 'N/A'
+                        ? `${s.patient.folderNumber} - ${(s.patient.lastName || '').toUpperCase()} ${s.patient.firstName || ''}`
+                        : (s.patient?.lastName || s.patient?.firstName 
+                            ? `${(s.patient.lastName || '').toUpperCase()} ${s.patient.firstName || ''}`
+                            : 'N/A')}
                     </td>
                     <td className="px-4 py-2">{s.medication.name}</td>
                     <td className="px-4 py-2">{s.quantity}</td>
@@ -597,23 +603,30 @@ const MedicationsList: React.FC = () => {
                   <option value="">Sélectionner un médicament</option>
                   {medications.filter((m) => m.name.toLowerCase().includes(medicationSearch.toLowerCase())).map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.name} (Stock: {m.quantity}, {m.price} $)
+                      {m.name} (Stock: {m.quantity}, {(m.sellingPrice || m.price || 0)} $)
                     </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Quantité</label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={form.quantity}
-                  onChange={handleChange}
-                  required
-                  min="1"
-                  max={medications.find((m) => m.id === parseInt(form.medicationId))?.quantity || 1}
-                  className="input-field"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    name="quantity"
+                    value={form.quantity}
+                    onChange={handleChange}
+                    required
+                    min="1"
+                    max={medications.find((m) => m.id === parseInt(form.medicationId))?.quantity || 1}
+                    className="input-field flex-1"
+                  />
+                  {form.medicationId && getMedicationPrice() > 0 && (
+                    <span className="text-sm font-semibold text-green-700 whitespace-nowrap bg-green-50 px-3 py-1 rounded border border-green-200">
+                      Prix: {getMedicationPrice().toFixed(2)} $
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Date</label>
