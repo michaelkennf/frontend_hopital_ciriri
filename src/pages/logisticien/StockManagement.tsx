@@ -185,13 +185,14 @@ const StockManagement: React.FC = () => {
     setAddError(null);
     try {
       const medicationData = {
-        name: addFields.name,
+        // Préserver le nom exactement tel quel (avec tous les caractères, chiffres et espaces)
+        name: addFields.name.trim(), // Seulement supprimer les espaces en début/fin
         quantity: parseInt(addFields.quantity, 10),
         unit: addFields.unit,
         purchasePrice: addFields.purchasePrice ? parseFloat(addFields.purchasePrice) : undefined,
         sellingPrice: addFields.sellingPrice ? parseFloat(addFields.sellingPrice) : undefined,
-        description: addFields.description || undefined,
-        category: addFields.category || undefined
+        description: addFields.description ? addFields.description.trim() : undefined,
+        category: addFields.category ? addFields.category.trim() : undefined
       };
 
       // Si editMed existe, c'est une modification, sinon c'est un ajout

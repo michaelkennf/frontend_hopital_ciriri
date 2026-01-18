@@ -119,15 +119,62 @@ const Invoices: React.FC = () => {
 
   const fetchPatientActs = async (patientId: number) => {
     try {
+      // Récupérer toutes les factures payées et imprimées du patient
+      const invoicesRes = await apiClient.get(`/api/invoices?patientId=${patientId}`);
+      let invoicesData = [];
+      if (Array.isArray(invoicesRes.data)) {
+        invoicesData = invoicesRes.data;
+      } else if (invoicesRes.data && Array.isArray(invoicesRes.data.invoices)) {
+        invoicesData = invoicesRes.data.invoices;
+      } else if (invoicesRes.data && invoicesRes.data.data && Array.isArray(invoicesRes.data.data)) {
+        invoicesData = invoicesRes.data.data;
+      }
+      
+      // Extraire les IDs des consultations, examens et ventes déjà facturés dans des factures payées et imprimées
+      const facturedConsultationIds = new Set<number>();
+      const facturedExamIds = new Set<number>();
+      const facturedSaleIds = new Set<number>();
+      
+      invoicesData.forEach((invoice: Invoice) => {
+        // Ne considérer que les factures payées ET imprimées
+        if (invoice.status === 'paid' && invoice.printed) {
+          invoice.items.forEach((item: InvoiceItem) => {
+            if (item.consultationId) {
+              facturedConsultationIds.add(item.consultationId);
+            }
+            if (item.examId) {
+              facturedExamIds.add(item.examId);
+            }
+            if (item.medicationSaleId) {
+              facturedSaleIds.add(item.medicationSaleId);
+            }
+          });
+        }
+      });
+      
+      // Récupérer toutes les consultations, examens et ventes
       const [consultationsRes, examsRes, salesRes] = await Promise.all([
         apiClient.get(`/api/consultations?patientId=${patientId}`),
         apiClient.get(`/api/exams/realized?patientId=${patientId}`),
         apiClient.get(`/api/medications/sales?patientId=${patientId}`),
       ]);
-      setPatientConsultations(consultationsRes.data.consultations || []);
-      setPatientExams(examsRes.data.exams || []);
-      setPatientSales(salesRes.data.sales || []);
+      
+      // Filtrer pour exclure ceux déjà facturés dans des factures payées et imprimées
+      const consultations = (consultationsRes.data.consultations || []).filter(
+        (c: any) => !facturedConsultationIds.has(c.id)
+      );
+      const exams = (examsRes.data.exams || []).filter(
+        (e: any) => !facturedExamIds.has(e.id)
+      );
+      const sales = (salesRes.data.sales || []).filter(
+        (s: any) => !facturedSaleIds.has(s.id)
+      );
+      
+      setPatientConsultations(consultations);
+      setPatientExams(exams);
+      setPatientSales(sales);
     } catch (e) {
+      console.error('Erreur lors de la récupération des actes du patient:', e);
       setPatientConsultations([]);
       setPatientExams([]);
       setPatientSales([]);
@@ -382,7 +429,7 @@ const Invoices: React.FC = () => {
       // Items en format ticket (sans tableau)
       invoice.items.forEach((item, index) => {
         console.log(`📝 Item ${index}:`, item);
-        const desc = item.description || item.itemName || 'N/A';
+        const desc = item.description || 'N/A';
         const qty = item.quantity || 0;
         const pu = item.unitPrice || 0;
         const total = item.totalPrice || 0;
@@ -988,7 +1035,7 @@ const Invoices: React.FC = () => {
                   return (
                     <tr key={item.id} className="border-b">
                       <td className="border px-3 py-2">
-                        <div className="font-medium">{item.description || item.itemName || 'Article'}</div>
+                        <div className="font-medium">{item.description || 'Article'}</div>
                         <div className="text-sm text-gray-600 font-semibold">{displayTotalPrice} {currentCurrency}</div>
                       </td>
                       <td className="border px-3 py-2">
