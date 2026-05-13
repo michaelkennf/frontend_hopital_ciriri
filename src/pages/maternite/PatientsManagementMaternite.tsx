@@ -136,6 +136,27 @@ const PatientsManagementMaternite: React.FC = () => {
     return searchText.includes(search.toLowerCase());
   });
 
+  const handleOpenEdit = (p: any) => {
+    const dob = p.dateOfBirth ? String(p.dateOfBirth).slice(0, 10) : '';
+    setEditForm({
+      id: p.id,
+      nom: p.firstName,
+      postNom: p.lastName,
+      sexe: p.gender,
+      dateNaissance: dob,
+      age: String(calculateAge(dob)),
+      poids: p.weight != null ? String(p.weight) : '',
+      adresse: p.address ?? '',
+      telephone: p.phone ?? '',
+      roomType: p.hospitalization?.roomTypeId != null ? String(p.hospitalization.roomTypeId) : '',
+      hospitalizationId: p.hospitalization?.id,
+      initialRoomTypeId: p.hospitalization?.roomTypeId,
+    });
+    setShowEditForm(true);
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -203,12 +224,9 @@ const PatientsManagementMaternite: React.FC = () => {
                       }
                     </td>
                     <td className="px-4 py-2">
-                      <button className="btn-secondary btn-xs" onClick={() => {
-                        setEditForm({ ...p, sexe: p.gender, dateNaissance: p.dateOfBirth, poids: p.weight, adresse: p.address, telephone: p.phone });
-                        setShowEditForm(true);
-                        setEditError(null);
-                        setEditSuccess(null);
-                      }}>Modifier</button>
+                      <button type="button" className="btn-secondary btn-xs" onClick={() => handleOpenEdit(p)}>
+                        Modifier
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -341,14 +359,26 @@ const PatientsManagementMaternite: React.FC = () => {
                 await apiClient.patch(`/api/patients/${editForm.id}`, {
                   firstName: editForm.nom,
                   lastName: editForm.postNom,
-                  gender: editForm.sexe,
-                  dateOfBirth: editForm.dateNaissance,
-                  weight: editForm.poids,
-                  address: editForm.adresse,
-                  phone: editForm.telephone,
+                  sexe: editForm.sexe,
+                  dateNaissance: editForm.dateNaissance,
+                  poids: editForm.poids,
+                  adresse: editForm.adresse,
+                  telephone: editForm.telephone,
                 });
+                const newRoomId = editForm.roomType ? parseInt(editForm.roomType, 10) : NaN;
+                if (
+                  editForm.hospitalizationId &&
+                  !Number.isNaN(newRoomId) &&
+                  editForm.initialRoomTypeId !== newRoomId
+                ) {
+                  await apiClient.patch(`/api/hospitalizations/${editForm.hospitalizationId}`, {
+                    roomTypeId: newRoomId,
+                  });
+                }
                 setEditSuccess('Patient modifié avec succès !');
                 setShowEditForm(false);
+                setEditForm(null);
+                setSuccess('Patient modifié avec succès !');
                 fetchPatients();
               } catch (e: any) {
                 setEditError(e.response?.data?.error || 'Erreur lors de la modification du patient');

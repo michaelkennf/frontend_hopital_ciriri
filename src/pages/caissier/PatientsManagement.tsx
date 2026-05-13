@@ -50,6 +50,21 @@ const PatientsManagement: React.FC = () => {
   const [lastFolderNumber, setLastFolderNumber] = useState(0); // Pour affichage local
   const [search, setSearch] = useState('');
   const currentYear = new Date().getFullYear();
+  const [editForm, setEditForm] = useState<{
+    id: number;
+    nom: string;
+    postNom: string;
+    sexe: string;
+    dateNaissance: string;
+    age: string;
+    poids: string;
+    adresse: string;
+    telephone: string;
+    folderNumber: string;
+  } | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Charger la liste des patients au chargement
   useEffect(() => {
@@ -118,6 +133,60 @@ const PatientsManagement: React.FC = () => {
       newForm.age = calculateAge(value).toString();
     }
     setForm(newForm);
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    if (!editForm) return;
+    let newForm = { ...editForm, [name]: value };
+    if (name === 'dateNaissance') {
+      newForm.age = calculateAge(value).toString();
+    }
+    setEditForm(newForm);
+  };
+
+  const openEditForm = (p: Patient) => {
+    const dob = p.dateOfBirth ? String(p.dateOfBirth).slice(0, 10) : '';
+    setEditForm({
+      id: p.id,
+      nom: p.firstName,
+      postNom: p.lastName,
+      sexe: p.gender,
+      dateNaissance: dob,
+      age: calculateAge(dob).toString(),
+      poids: p.weight != null ? String(p.weight) : '',
+      adresse: p.address ?? '',
+      telephone: p.phone ?? '',
+      folderNumber: p.folderNumber ?? '',
+    });
+    setShowEditForm(true);
+    setEditError(null);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm) return;
+    setEditLoading(true);
+    setEditError(null);
+    try {
+      await apiClient.patch(`/api/patients/${editForm.id}`, {
+        firstName: editForm.nom,
+        lastName: editForm.postNom,
+        sexe: editForm.sexe,
+        dateNaissance: editForm.dateNaissance,
+        poids: editForm.poids,
+        adresse: editForm.adresse,
+        telephone: editForm.telephone,
+      });
+      setShowEditForm(false);
+      setEditForm(null);
+      setSuccess('Patient modifié avec succès.');
+      await fetchPatients();
+    } catch (e: any) {
+      setEditError(e.response?.data?.error || e.message || 'Erreur lors de la modification du patient');
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -223,6 +292,7 @@ const PatientsManagement: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Poids (kg)</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -237,6 +307,11 @@ const PatientsManagement: React.FC = () => {
                     <td className="px-4 py-2">{p.weight}</td>
                     <td className="px-4 py-2">{p.address}</td>
                     <td className="px-4 py-2">{p.phone}</td>
+                    <td className="px-4 py-2">
+                      <button type="button" className="btn-secondary btn-xs" onClick={() => openEditForm(p)}>
+                        Modifier
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -378,6 +453,128 @@ const PatientsManagement: React.FC = () => {
                 </button>
                 <button type="submit" className="btn-primary w-full sm:w-auto" disabled={loading}>
                   {loading ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditForm && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg relative flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-20 rounded-t-lg">
+              <h2 className="text-xl font-bold">Modifier le patient</h2>
+              <button
+                type="button"
+                className="text-gray-400 hover:text-gray-600 ml-2"
+                onClick={() => {
+                  setShowEditForm(false);
+                  setEditForm(null);
+                }}
+                aria-label="Fermer"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4">
+              {editError && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{editError}</div>
+              )}
+              <div className="space-y-4 pb-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Numéro de dossier</label>
+                  <input
+                    type="text"
+                    value={editForm.folderNumber}
+                    readOnly
+                    className="input-field bg-gray-100 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Nom</label>
+                  <input
+                    type="text"
+                    name="nom"
+                    value={editForm.nom}
+                    onChange={handleEditChange}
+                    required
+                    className="input-field"
+                    placeholder="Entrez le nom"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Post-nom</label>
+                  <input
+                    type="text"
+                    name="postNom"
+                    value={editForm.postNom}
+                    onChange={handleEditChange}
+                    required
+                    className="input-field"
+                    placeholder="Entrez le post-nom"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Sexe</label>
+                  <select name="sexe" value={editForm.sexe} onChange={handleEditChange} required className="input-field">
+                    <option value="">Sélectionner</option>
+                    <option value="Masculin">Masculin</option>
+                    <option value="Féminin">Féminin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Date de naissance</label>
+                  <input
+                    type="date"
+                    name="dateNaissance"
+                    value={editForm.dateNaissance}
+                    onChange={handleEditChange}
+                    required
+                    max={new Date().toISOString().split('T')[0]}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Âge</label>
+                  <input type="text" name="age" value={editForm.age} readOnly className="input-field bg-gray-100 cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Poids (kg)</label>
+                  <input
+                    type="number"
+                    name="poids"
+                    value={editForm.poids}
+                    onChange={handleEditChange}
+                    required
+                    min="0"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Adresse physique</label>
+                  <input type="text" name="adresse" value={editForm.adresse} onChange={handleEditChange} required className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Numéro de téléphone</label>
+                  <input type="tel" name="telephone" value={editForm.telephone} onChange={handleEditChange} required className="input-field" />
+                </div>
+              </div>
+              <div className="pt-4 flex flex-col sm:flex-row justify-end gap-2 sticky bottom-0 bg-white z-10 pb-2">
+                <button
+                  type="button"
+                  className="btn-secondary w-full sm:w-auto"
+                  onClick={() => {
+                    setShowEditForm(false);
+                    setEditForm(null);
+                  }}
+                >
+                  Annuler
+                </button>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={editLoading}>
+                  {editLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
                 </button>
               </div>
             </form>

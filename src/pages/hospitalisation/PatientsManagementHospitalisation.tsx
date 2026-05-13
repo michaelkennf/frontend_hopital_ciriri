@@ -121,17 +121,20 @@ const PatientsManagementHospitalisation: React.FC = () => {
   };
 
   const handleEdit = (patient: any) => {
+    const dob = patient.dateOfBirth ? String(patient.dateOfBirth).slice(0, 10) : '';
     setEditForm({
       id: patient.id,
       nom: patient.firstName,
       postNom: patient.lastName,
       sexe: patient.gender,
-      dateNaissance: patient.dateOfBirth,
-      age: calculateAge(patient.dateOfBirth),
-      poids: patient.weight,
-      adresse: patient.address,
-      telephone: patient.phone,
-      roomType: patient.hospitalization?.roomTypeId?.toString() || ''
+      dateNaissance: dob,
+      age: calculateAge(dob),
+      poids: patient.weight != null ? String(patient.weight) : '',
+      adresse: patient.address ?? '',
+      telephone: patient.phone ?? '',
+      roomType: patient.hospitalization?.roomTypeId?.toString() || '',
+      hospitalizationId: patient.hospitalization?.id,
+      initialRoomTypeId: patient.hospitalization?.roomTypeId,
     });
     setShowEditForm(true);
     setEditError(null);
@@ -210,10 +213,22 @@ const PatientsManagementHospitalisation: React.FC = () => {
         adresse: editForm.adresse,
         telephone: editForm.telephone,
       });
-      
+
+      const newRoomId = editForm.roomType ? parseInt(editForm.roomType, 10) : NaN;
+      if (
+        editForm.hospitalizationId &&
+        !Number.isNaN(newRoomId) &&
+        editForm.initialRoomTypeId !== newRoomId
+      ) {
+        await authenticatedAxios.patch(`/api/hospitalizations/${editForm.hospitalizationId}`, {
+          roomTypeId: newRoomId,
+        });
+      }
+
       await fetchPatients();
       setShowEditForm(false);
       setEditForm(null);
+      setSuccess('Patient modifié avec succès !');
       setEditSuccess('Patient modifié avec succès !');
     } catch (e: any) {
       setEditError(e.response?.data?.error || 'Erreur lors de la modification du patient');

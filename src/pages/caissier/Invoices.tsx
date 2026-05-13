@@ -1005,19 +1005,31 @@ const Invoices: React.FC = () => {
           </table>
         </div>
       )}
-      {/* Modal d'édition de facture */}
+      {/* Modal d'édition de facture — scroll interne + pied fixe (petits écrans) */}
       {editInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
-            <h2 className="text-xl font-bold mb-4">Modifier la facture {editInvoice.invoiceNumber}</h2>
-            {editError && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{editError}</div>}
-            <table className="w-full mb-4 border-collapse">
-              <thead>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black bg-opacity-40 overflow-y-auto overscroll-y-contain">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-invoice-title"
+            className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[min(92dvh,calc(100vh-1.5rem))] flex flex-col my-auto min-h-0 overflow-hidden"
+          >
+            <div className="shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b border-gray-100">
+              <h2 id="edit-invoice-title" className="text-lg sm:text-xl font-bold pr-8">
+                Modifier la facture {editInvoice.invoiceNumber}
+              </h2>
+              {editError && (
+                <div className="bg-red-100 text-red-700 p-2 mt-2 rounded text-sm">{editError}</div>
+              )}
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4">
+              <table className="w-full border-collapse text-sm sm:text-base">
+              <thead className="sticky top-0 z-10 bg-gray-50 shadow-sm">
                 <tr className="bg-gray-50">
-                  <th className="border px-3 py-2 text-left">Article</th>
-                  <th className="border px-3 py-2 text-left">Type</th>
-                  <th className="border px-3 py-2 text-left">Prix</th>
-                  <th className="border px-3 py-2 text-left">Devise</th>
+                  <th className="border px-2 sm:px-3 py-2 text-left">Article</th>
+                  <th className="border px-2 sm:px-3 py-2 text-left">Type</th>
+                  <th className="border px-2 sm:px-3 py-2 text-left">Prix</th>
+                  <th className="border px-2 sm:px-3 py-2 text-left">Devise</th>
                 </tr>
               </thead>
               <tbody>
@@ -1142,16 +1154,34 @@ const Invoices: React.FC = () => {
                 })}
               </tbody>
             </table>
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-bold">Total : {formatEditTotal()}</span>
-              <button className="btn-secondary" onClick={() => {
-                setEditInvoice(null);
-                setEditItems([]);
-                setEditTotal(0);
-                setPriceInputs({}); // Réinitialiser les inputs de prix
-              }}>Annuler</button>
             </div>
-            <button className="btn-primary" onClick={handleEditSave} disabled={editLoading}>{editLoading ? 'Enregistrement...' : 'Enregistrer'}</button>
+            <div className="shrink-0 border-t border-gray-200 bg-white px-4 sm:px-6 py-3 sm:py-4 rounded-b-lg shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="font-bold text-base order-2 sm:order-1">Total : {formatEditTotal()}</span>
+                <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2">
+                  <button
+                    type="button"
+                    className="btn-secondary w-full sm:w-auto"
+                    onClick={() => {
+                      setEditInvoice(null);
+                      setEditItems([]);
+                      setEditTotal(0);
+                      setPriceInputs({});
+                    }}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary w-full sm:w-auto"
+                    onClick={handleEditSave}
+                    disabled={editLoading}
+                  >
+                    {editLoading ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
