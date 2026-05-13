@@ -292,12 +292,14 @@ const PatientsManagement: React.FC = () => {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Poids (kg)</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase sticky right-0 z-20 min-w-[7.5rem] bg-gray-50 shadow-[-6px_0_8px_-4px_rgba(0,0,0,0.12)]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredPatients.map((p) => (
-                  <tr key={p.id}>
+                  <tr key={p.id} className="group">
                     <td className="px-4 py-2 font-mono text-sm">{p.folderNumber}</td>
                     <td className="px-4 py-2 font-medium">{p.lastName}</td>
                     <td className="px-4 py-2">{p.firstName}</td>
@@ -307,8 +309,13 @@ const PatientsManagement: React.FC = () => {
                     <td className="px-4 py-2">{p.weight}</td>
                     <td className="px-4 py-2">{p.address}</td>
                     <td className="px-4 py-2">{p.phone}</td>
-                    <td className="px-4 py-2">
-                      <button type="button" className="btn-secondary btn-xs" onClick={() => openEditForm(p)}>
+                    <td className="px-3 py-2 sticky right-0 z-10 min-w-[7.5rem] bg-white shadow-[-6px_0_8px_-4px_rgba(0,0,0,0.12)] group-hover:bg-gray-50">
+                      <button
+                        type="button"
+                        className="whitespace-nowrap rounded bg-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1"
+                        title="Modifier les informations du patient"
+                        onClick={() => openEditForm(p)}
+                      >
                         Modifier
                       </button>
                     </td>
