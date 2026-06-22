@@ -33,6 +33,13 @@ interface Invoice {
   items: InvoiceItem[];
 }
 
+/** Même ordre Nom / Post-nom que dans la liste des factures (écran = impression). */
+const formatPatientDisplayName = (patient: { firstName?: string; lastName?: string }) => {
+  const first = (patient.firstName || '').trim();
+  const last = (patient.lastName || '').trim();
+  return [first, last].filter(Boolean).join(' ');
+};
+
 const Invoices: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -422,7 +429,7 @@ const Invoices: React.FC = () => {
       win.document.write('<div class="facture-header">FACTURE</div>');
       win.document.write(`<div class="patient-info">N°: ${invoice.invoiceNumber}</div>`);
       win.document.write(`<div class="patient-info">${invoice.patient.folderNumber}</div>`);
-      win.document.write(`<div class="patient-info">${invoice.patient.lastName.toUpperCase()} ${invoice.patient.firstName}</div>`);
+      win.document.write(`<div class="patient-info">${formatPatientDisplayName(invoice.patient)}</div>`);
       win.document.write(`<div class="patient-info">${new Date(invoice.createdAt).toLocaleDateString('fr-FR')} ${new Date(invoice.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
       win.document.write('<hr/>');
       
@@ -785,7 +792,7 @@ const Invoices: React.FC = () => {
           <option value="">Tous les patients</option>
           {Array.isArray(patients) && patients.map(p => (
             <option key={p.id} value={p.id}>
-              {p.folderNumber} - {p.lastName.toUpperCase()} {p.firstName}
+              {p.folderNumber} - {formatPatientDisplayName(p)}
             </option>
           ))}
         </select>
@@ -840,7 +847,7 @@ const Invoices: React.FC = () => {
                     <React.Fragment key={inv.id}>
                       <tr className="border-t">
                         <td className="px-4 py-2 font-mono">{inv.invoiceNumber}</td>
-                        <td className="px-4 py-2">{inv.patient.firstName} {inv.patient.lastName}</td>
+                        <td className="px-4 py-2">{formatPatientDisplayName(inv.patient)}</td>
                         <td className="px-4 py-2">{inv.patient.folderNumber}</td>
                         <td className="px-4 py-2">{formatInvoiceAmount(inv)}</td>
                         <td className="px-4 py-2">
@@ -924,7 +931,7 @@ const Invoices: React.FC = () => {
                     <React.Fragment key={inv.id}>
                       <tr className="border-t">
                         <td className="px-4 py-2 font-mono">{inv.invoiceNumber}</td>
-                        <td className="px-4 py-2">{inv.patient.firstName} {inv.patient.lastName}</td>
+                        <td className="px-4 py-2">{formatPatientDisplayName(inv.patient)}</td>
                         <td className="px-4 py-2">{inv.patient.folderNumber}</td>
                         <td className="px-4 py-2">{formatInvoiceAmount(inv)}</td>
                         <td className="px-4 py-2">
