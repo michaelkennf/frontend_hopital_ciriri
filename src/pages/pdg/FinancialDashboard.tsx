@@ -23,6 +23,7 @@ const FinancialDashboard: React.FC = () => {
   const [incomeData, setIncomeData] = useState<any>(null);
   const [expenseData, setExpenseData] = useState<any>(null);
   const [incomeDetails, setIncomeDetails] = useState<any[]>([]);
+  const [pendingDetails, setPendingDetails] = useState<any[]>([]);
   const [expenseDetails, setExpenseDetails] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +33,7 @@ const FinancialDashboard: React.FC = () => {
     try {
       console.log('[FINANCIAL] Début de la récupération des données financières');
       
-      // Invoices (entrées) - récupérer toutes les factures payées ou imprimées
+      // Entrées = reçus imprimés (statut payé). Les factures sans reçu restent en attente.
       const invRes = await apiClient.get('/api/invoices');
       const invoices = invRes.data.invoices || [];
       console.log('[FINANCIAL] Factures récupérées:', invoices.length);
@@ -52,17 +53,19 @@ const FinancialDashboard: React.FC = () => {
       const incomeByType: Record<string, number[]> = {};
       types.forEach(type => { incomeByType[type] = Array(12).fill(0); });
       
-      // Filtrer les factures payées ou imprimées
-      const validInvoices = invoices.filter((i: any) => 
-        (i.status === 'paid' || i.printed === true) && 
-        i.createdAt && 
-        new Date(i.createdAt).getFullYear() === year
-      );
+      const receiptInvoices = invoices.filter((i: any) => i.status === 'paid');
+      const pendingInvoices = invoices.filter((i: any) => i.status === 'pending');
+
+      const entryDate = (i: any) => i.paidDate || i.createdAt;
+      const validInvoices = receiptInvoices.filter((i: any) => {
+        const d = entryDate(i);
+        return d && new Date(d).getFullYear() === year;
+      });
       
       console.log('[FINANCIAL] Factures valides (payées/imprimées):', validInvoices.length);
       
       validInvoices.forEach((i: any) => {
-        const m = getMonth(i.createdAt);
+        const m = getMonth(entryDate(i));
         console.log(`[FINANCIAL] Traitement facture ${i.id}:`, {
           status: i.status,
           printed: i.printed,
@@ -142,14 +145,16 @@ const FinancialDashboard: React.FC = () => {
           }
         ]
       });
-      // Détails des entrées
+      const baseTypeOf = (type: string) => (type || '').includes(':') ? type.split(':')[0] : (type || '');
+
       const incomeRows: any[] = [];
-      invoices.filter((i: any) => i.status === 'paid' || i.printed === true).forEach((i: any) => {
+      receiptInvoices.forEach((i: any) => {
         if (i.items && Array.isArray(i.items)) {
           i.items.forEach((item: any) => {
             incomeRows.push({
-              date: i.createdAt,
-              type: item.type,
+              date: entryDate(i),
+              invoiceNumber: i.invoiceNumber,
+              type: baseTypeOf(item.type),
               description: item.description,
               patient: i.patient?.firstName ? `${i.patient.firstName} ${i.patient.lastName}` : '',
               amount: item.totalPrice || 0
@@ -158,6 +163,35 @@ const FinancialDashboard: React.FC = () => {
         }
       });
       setIncomeDetails(incomeRows);
+
+      const formatInvoicePending = (invoice: any) => {
+        let amountFC = 0;
+        let amountUSD = 0;
+        (invoice.items || []).forEach((item: any) => {
+          const currency = (item.type || '').includes(':')
+            ? item.type.split(':')[1]
+            : (baseTypeOf(item.type) === 'consultation' ? 'FC' : '$');
+          if (currency === 'FC') amountFC += item.totalPrice || 0;
+          else amountUSD += item.totalPrice || 0;
+        });
+        if (amountFC > 0 && amountUSD > 0) {
+          return `${amountFC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC + ${amountUSD.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
+        }
+        if (amountFC > 0) return `${amountFC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC`;
+        return `${amountUSD.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
+      };
+
+      const pendingRows: any[] = [];
+      pendingInvoices.forEach((i: any) => {
+        pendingRows.push({
+          date: i.createdAt,
+          invoiceNumber: i.invoiceNumber,
+          patient: i.patient?.firstName ? `${i.patient.firstName} ${i.patient.lastName}` : '',
+          amountLabel: formatInvoicePending(i),
+          facturePrinted: i.printed === true
+        });
+      });
+      setPendingDetails(pendingRows);
       // Détails des sorties
       const expenseRows: any[] = [];
       supplyRequests.filter((r: any) => r.status === 'approved').forEach((r: any) => {
@@ -184,7 +218,8 @@ const FinancialDashboard: React.FC = () => {
 
   // Fonction pour formater le montant selon le type
   const formatAmount = (amount: number, type: string) => {
-    if (type === 'consultation') {
+    const baseType = (type || '').split(':')[0];
+    if (baseType === 'consultation') {
       return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC`;
     } else {
       return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
@@ -197,7 +232,8 @@ const FinancialDashboard: React.FC = () => {
     let otherAmountUSD = 0;
 
     incomeDetails.forEach(row => {
-      if (row.type === 'consultation') {
+      const baseType = (row.type || '').split(':')[0];
+      if (baseType === 'consultation') {
         consultationAmountFC += row.amount;
       } else {
         otherAmountUSD += row.amount;
@@ -239,7 +275,7 @@ const FinancialDashboard: React.FC = () => {
           )}
         </button>
       </div>
-      <p className="text-gray-600 mb-6">Visualisez les entrées et sorties mensuelles par type (consultations, examens, médicaments, hospitalisations, approvisionnements).</p>
+      <p className="text-gray-600 mb-6">Les entrées correspondent aux reçus imprimés. Les factures dont le reçu n'a pas encore été imprimé restent en attente.</p>
       {error && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{error}</div>}
       {loading ? (
         <div className="text-center py-8">Chargement...</div>
@@ -258,7 +294,7 @@ const FinancialDashboard: React.FC = () => {
         {/* Tableau récapitulatif détaillé */}
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="card">
-            <h2 className="text-lg font-semibold mb-2">Détail des entrées</h2>
+            <h2 className="text-lg font-semibold mb-2">Entrées (reçus imprimés)</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
@@ -316,6 +352,35 @@ const FinancialDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+        <div className="mt-8 border border-[#EDEBE9] bg-white">
+          <h2 className="text-lg font-semibold px-4 py-3 border-b border-[#EDEBE9] bg-[#FFF4CE]">En attente de paiement</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-[#F3F2F1] text-left">
+                  <th className="p-2">Date</th>
+                  <th className="p-2">N°</th>
+                  <th className="p-2">Patient</th>
+                  <th className="p-2">Facture imprimée</th>
+                  <th className="p-2">Montant</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingDetails.length === 0 ? (
+                  <tr><td colSpan={5} className="p-3 text-[#605E5C]">Aucune facture en attente.</td></tr>
+                ) : pendingDetails.map((row, idx) => (
+                  <tr key={idx} className="border-b border-[#EDEBE9]">
+                    <td className="p-2">{row.date ? new Date(row.date).toLocaleDateString('fr-FR') : ''}</td>
+                    <td className="p-2 font-mono">{row.invoiceNumber}</td>
+                    <td className="p-2">{row.patient}</td>
+                    <td className="p-2">{row.facturePrinted ? 'Oui' : 'Non'}</td>
+                    <td className="p-2">{row.amountLabel}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
         </>

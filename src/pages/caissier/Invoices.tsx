@@ -46,7 +46,9 @@ const Invoices: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [printingId, setPrintingId] = useState<number | null>(null);
-  const [printedInSession, setPrintedInSession] = useState<Set<number>>(new Set());
+  const [printTarget, setPrintTarget] = useState<Invoice | null>(null);
+  const [printFacture, setPrintFacture] = useState(false);
+  const [printRecu, setPrintRecu] = useState(false);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
@@ -143,8 +145,9 @@ const Invoices: React.FC = () => {
       const facturedSaleIds = new Set<number>();
       
       invoicesData.forEach((invoice: Invoice) => {
-        // Ne considérer que les factures payées ET imprimées
-        if (invoice.status === 'paid' && invoice.printed) {
+        // Le reçu imprimé (paiement) retire l'acte des prochaines factures.
+        // L'impression de la facture seule ne compte pas.
+        if (invoice.status === 'paid') {
           invoice.items.forEach((item: InvoiceItem) => {
             if (item.consultationId) {
               facturedConsultationIds.add(item.consultationId);
@@ -192,7 +195,18 @@ const Invoices: React.FC = () => {
     fetchInvoices(selectedPatientId);
   }, [selectedPatientId]);
 
-  const handlePrint = async (invoice: Invoice) => {
+  const openPrintChoice = (invoice: Invoice) => {
+    if (invoice.status === 'cancelled') {
+      setError('Impossible d\'imprimer une facture annulée.');
+      return;
+    }
+    setError(null);
+    setPrintTarget(invoice);
+    setPrintFacture(false);
+    setPrintRecu(false);
+  };
+
+  const handlePrint = async (invoice: Invoice, options: { facture: boolean; recu: boolean }) => {
     // Vérifier si la facture est annulée
     if (invoice.status === 'cancelled') {
       setError('Impossible d\'imprimer une facture annulée.');
@@ -418,96 +432,88 @@ const Invoices: React.FC = () => {
           .entete-logo { 
             display: none;
           }
+          .doc-page { page-break-after: always; }
+          .doc-page-last { page-break-after: auto; }
         </style>
       `);
       win.document.write('</head><body>');
       
-      // Entête institutionnelle
-      win.document.write('<div class="facture">');
-      win.document.write('<div class="entete-title">POLYCLINIQUE DES APOTRES</div>');
-      win.document.write('<hr/>');
-      win.document.write('<div class="facture-header">FACTURE</div>');
-      win.document.write(`<div class="patient-info">N°: ${invoice.invoiceNumber}</div>`);
-      win.document.write(`<div class="patient-info">${invoice.patient.folderNumber}</div>`);
-      win.document.write(`<div class="patient-info">${formatPatientDisplayName(invoice.patient)}</div>`);
-      win.document.write(`<div class="patient-info">${new Date(invoice.createdAt).toLocaleDateString('fr-FR')} ${new Date(invoice.createdAt).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
-      win.document.write('<hr/>');
-      
-      // Items en format ticket (sans tableau)
-      invoice.items.forEach((item, index) => {
-        console.log(`📝 Item ${index}:`, item);
-        const desc = item.description || 'N/A';
-        const qty = item.quantity || 0;
-        const pu = item.unitPrice || 0;
-        const total = item.totalPrice || 0;
-        // Extraire la devise du type (peut être "type:currency" ou juste "type")
-        const currency = extractCurrencyFromType(item.type || '');
-        const baseType = extractBaseType(item.type || '');
-        
-        win.document.write('<div class="ticket-item">');
-        // Ligne principale : Description
-        win.document.write(`<div class="ticket-item-line">
-          <div class="ticket-item-desc">${desc}</div>
-        </div>`);
-        // Détails : Quantité et Prix unitaire
-        // Pour l'hospitalisation, afficher clairement "X jour(s) x prix/jour"
-        if (baseType === 'hospitalization') {
-          win.document.write(`<div class="ticket-item-details">
-            ${qty} jour(s) x ${pu.toFixed(2)}${currency}/jour
+      const kinds: Array<'facture' | 'recu'> = [];
+      if (options.facture) kinds.push('facture');
+      if (options.recu) kinds.push('recu');
+
+      kinds.forEach((kind, kindIndex) => {
+        const title = kind === 'recu' ? 'RECU' : 'FACTURE';
+        const pageClass = kindIndex < kinds.length - 1 ? 'doc-page' : 'doc-page doc-page-last';
+        win.document.write(`<div class="facture ${pageClass}">`);
+        win.document.write('<div class="entete-title">POLYCLINIQUE DES APOTRES</div>');
+        win.document.write('<hr/>');
+        win.document.write(`<div class="facture-header">${title}</div>`);
+        win.document.write(`<div class="patient-info">N°: ${invoice.invoiceNumber}</div>`);
+        win.document.write(`<div class="patient-info">${invoice.patient.folderNumber}</div>`);
+        win.document.write(`<div class="patient-info">${formatPatientDisplayName(invoice.patient)}</div>`);
+        win.document.write(`<div class="patient-info">${new Date().toLocaleDateString('fr-FR')} ${new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
+        win.document.write('<hr/>');
+
+        invoice.items.forEach((item) => {
+          const desc = item.description || 'N/A';
+          const qty = item.quantity || 0;
+          const pu = item.unitPrice || 0;
+          const total = item.totalPrice || 0;
+          const currency = extractCurrencyFromType(item.type || '');
+          const baseType = extractBaseType(item.type || '');
+
+          win.document.write('<div class="ticket-item">');
+          win.document.write(`<div class="ticket-item-line">
+            <div class="ticket-item-desc">${desc}</div>
           </div>`);
+          if (baseType === 'hospitalization') {
+            win.document.write(`<div class="ticket-item-details">
+              ${qty} jour(s) x ${pu.toFixed(2)}${currency}/jour
+            </div>`);
+          } else {
+            win.document.write(`<div class="ticket-item-details">
+              Qte: ${qty} x ${pu.toFixed(2)}${currency}
+            </div>`);
+          }
+          win.document.write(`<div class="ticket-item-line">
+            <div class="ticket-item-price">${total.toFixed(2)}${currency}</div>
+          </div>`);
+          win.document.write('</div>');
+        });
+
+        win.document.write('<hr/>');
+        win.document.write(`<div class="total-section">TOTAL: ${formatInvoiceAmount(invoice)}</div>`);
+        win.document.write('<div class="footer">');
+        if (kind === 'facture') {
+          win.document.write('Document non payé.<br/>');
         } else {
-          win.document.write(`<div class="ticket-item-details">
-            Qte: ${qty} x ${pu.toFixed(2)}${currency}
-          </div>`);
+          win.document.write('Paiement reçu.<br/>');
         }
-        // Prix total aligné à gauche
-        win.document.write(`<div class="ticket-item-line">
-          <div class="ticket-item-price">${total.toFixed(2)}${currency}</div>
-        </div>`);
+        win.document.write('DRCONGO/SK/BKV<br/>');
+        win.document.write('Av. BUHOZI/KAJANGU/CIRIRI<br/>');
+        win.document.write('Tel: (+243) 975 822 376<br/>');
+        win.document.write('843 066 779');
+        win.document.write('</div>');
         win.document.write('</div>');
       });
-      
-      win.document.write('<hr/>');
-      
-      // Total
-      win.document.write(`<div class="total-section">TOTAL: ${formatInvoiceAmount(invoice)}</div>`);
-      
-      // Bas de page institutionnel
-      win.document.write('<div class="footer">');
-      win.document.write('DRCONGO/SK/BKV<br/>');
-      win.document.write('Av. BUHOZI/KAJANGU/CIRIRI<br/>');
-      win.document.write('Tel: (+243) 975 822 376<br/>');
-      win.document.write('843 066 779');
-      win.document.write('</div>');
-      win.document.write('</div>');
-      
+
       win.document.write('</body></html>');
       win.document.close();
       win.focus();
-      
-      console.log('✅ HTML généré, lancement de l\'impression...');
+
       setTimeout(() => {
         win.print();
-        console.log('✅ Impression lancée');
       }, 500);
-      
-      // Marquer la facture comme imprimée côté backend et dans la session
-      console.log('🔄 Marquage de la facture comme imprimée...');
-      const printResponse = await apiClient.patch(`/api/invoices/${invoice.id}/print`);
-      console.log('✅ Facture marquée comme imprimée côté backend');
-      console.log('📊 Réponse backend:', printResponse.data);
-      
-      if (printResponse.data.statusChanged) {
-        console.log(`✅ Statut changé de "pending" à "${printResponse.data.newStatus}"`);
+
+      if (options.facture) {
+        await apiClient.patch(`/api/invoices/${invoice.id}/print`, { document: 'facture' });
       }
-      
-      // Ajouter à l'état local pour masquer immédiatement le bouton
-      setPrintedInSession(prev => new Set(prev).add(invoice.id));
-      console.log('✅ Facture ajoutée à l\'état de session');
-      
-      // Rafraîchir la liste
+      if (options.recu) {
+        await apiClient.patch(`/api/invoices/${invoice.id}/print`, { document: 'recu' });
+      }
+
       await fetchInvoices(selectedPatientId);
-      console.log('✅ Liste des factures rafraîchie');
       
     } catch (error: any) {
       console.error('❌ Erreur lors de l\'impression:', error);
@@ -774,13 +780,116 @@ const Invoices: React.FC = () => {
     const text = `${inv.invoiceNumber} ${inv.patient.folderNumber} ${inv.patient.lastName} ${inv.patient.firstName}`.toLowerCase();
     return text.includes(search.toLowerCase());
   });
-  const unprintedInvoices = filteredInvoices.filter(inv => !inv.printed);
-  const printedInvoices = filteredInvoices.filter(inv => inv.printed);
+  const awaitingReceipt = filteredInvoices.filter(inv => inv.status !== 'paid' && inv.status !== 'cancelled');
+  const paidReceipts = filteredInvoices.filter(inv => inv.status === 'paid');
+  const cancelledInvoices = filteredInvoices.filter(inv => inv.status === 'cancelled');
+
+  const statusLabel = (status: string) => {
+    if (status === 'paid') return 'Payée';
+    if (status === 'cancelled') return 'Annulée';
+    return 'En attente';
+  };
+
+  const confirmPrint = async () => {
+    if (!printTarget) return;
+    if (!printFacture && !printRecu) {
+      setError('Cochez la facture, le reçu, ou les deux.');
+      return;
+    }
+    const invoice = printTarget;
+    const options = { facture: printFacture, recu: printRecu };
+    setPrintTarget(null);
+    await handlePrint(invoice, options);
+  };
+
+  const renderInvoiceRows = (list: Invoice[]) => list.map((inv) => {
+    const receiptPrinted = inv.status === 'paid';
+    const locked = inv.status === 'paid' || inv.status === 'cancelled';
+    return (
+      <React.Fragment key={inv.id}>
+        <tr className="border-t">
+          <td className="px-4 py-2 font-mono">{inv.invoiceNumber}</td>
+          <td className="px-4 py-2">{formatPatientDisplayName(inv.patient)}</td>
+          <td className="px-4 py-2">{inv.patient.folderNumber}</td>
+          <td className="px-4 py-2">{formatInvoiceAmount(inv)}</td>
+          <td className="px-4 py-2">
+            <span className={
+              inv.status === 'pending' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-sm' :
+              inv.status === 'paid' ? 'bg-green-100 text-green-800 px-2 py-1 rounded-sm' :
+              inv.status === 'cancelled' ? 'bg-red-100 text-red-800 px-2 py-1 rounded-sm' :
+              'bg-gray-100 text-gray-800 px-2 py-1 rounded-sm'
+            }>
+              {statusLabel(inv.status)}
+            </span>
+          </td>
+          <td className="px-4 py-2 text-center">
+            {inv.printed ? <span className="text-green-700 font-semibold">Oui</span> : <span className="text-gray-400">Non</span>}
+          </td>
+          <td className="px-4 py-2 text-center">
+            {receiptPrinted ? <span className="text-green-700 font-semibold">Oui</span> : <span className="text-gray-400">Non</span>}
+          </td>
+          <td className="px-4 py-2 space-x-2 whitespace-nowrap">
+            {inv.status === 'cancelled' ? (
+              <span className="text-red-700 text-sm">Annulée</span>
+            ) : (
+              <>
+                {!locked && (
+                  <button className="bg-[#0078D4] hover:bg-[#106EBE] text-white px-3 py-1 rounded-sm" title="Modifier" onClick={() => handleEdit(inv)}>
+                    Modifier
+                  </button>
+                )}
+                <button className="bg-[#107C10] hover:bg-[#0B6A0B] text-white px-3 py-1 rounded-sm" title="Imprimer" onClick={() => openPrintChoice(inv)} disabled={printingId === inv.id}>
+                  {printingId === inv.id ? 'Impression...' : 'Imprimer'}
+                </button>
+                {!locked && (
+                  <button
+                    className="border border-red-700 text-red-700 px-3 py-1 rounded-sm hover:bg-red-50"
+                    title="Annuler"
+                    onClick={() => handleCancel(inv)}
+                    disabled={cancellingId === inv.id}
+                  >
+                    {cancellingId === inv.id ? 'Annulation...' : 'Annuler'}
+                  </button>
+                )}
+              </>
+            )}
+          </td>
+        </tr>
+        <tr className={inv.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}>
+          <td colSpan={8} className="px-4 py-2">
+            <div className="font-semibold text-[#005A9E] mb-1">Détail</div>
+            <table className="w-full text-sm mb-2">
+              <thead>
+                <tr>
+                  <th className="text-left">Type</th>
+                  <th className="text-left">Description</th>
+                  <th className="text-left">Quantité</th>
+                  <th className="text-left">Prix unitaire</th>
+                  <th className="text-left">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inv.items.map(item => (
+                  <tr key={item.id}>
+                    <td>{extractBaseType(item.type || '')}</td>
+                    <td>{item.description}</td>
+                    <td>{item.quantity}</td>
+                    <td>{formatItemUnitPrice(item)}</td>
+                    <td>{formatItemPrice(item)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </React.Fragment>
+    );
+  });
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Factures</h1>
-      <p className="text-gray-600 mb-6">Imprimez les factures pour les consultations, médicaments et examens.</p>
+      <p className="text-gray-600 mb-6">La facture se donne au patient sans toucher aux comptes. Le reçu, imprimé au moment du paiement, enregistre l'entrée.</p>
       <div className="flex flex-col sm:flex-row gap-2 mb-4 items-center">
         <label htmlFor="patient-select" className="font-medium">Filtrer par patient :</label>
         <select
@@ -818,200 +927,83 @@ const Invoices: React.FC = () => {
       {loading ? (
         <div className="text-center">Chargement...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border rounded shadow">
+        <div className="overflow-x-auto border border-[#EDEBE9]">
+          <table className="min-w-full bg-white text-sm">
             <thead>
-              <tr>
-                <th className="px-4 py-2">N°</th>
-                <th className="px-4 py-2">Patient</th>
-                <th className="px-4 py-2">Dossier</th>
-                <th className="px-4 py-2">Montant</th>
-                <th className="px-4 py-2">Statut</th>
-                <th className="px-4 py-2">Imprimée</th>
-                <th className="px-4 py-2">Actions</th>
+              <tr className="bg-[#F3F2F1] text-left text-[#323130]">
+                <th className="px-4 py-2 font-semibold">N°</th>
+                <th className="px-4 py-2 font-semibold">Patient</th>
+                <th className="px-4 py-2 font-semibold">Dossier</th>
+                <th className="px-4 py-2 font-semibold">Montant</th>
+                <th className="px-4 py-2 font-semibold">Statut</th>
+                <th className="px-4 py-2 font-semibold text-center">Facture</th>
+                <th className="px-4 py-2 font-semibold text-center">Reçu</th>
+                <th className="px-4 py-2 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredInvoices.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-8 text-gray-500">
+                <tr><td colSpan={8} className="text-center py-8 text-gray-500">
                   {invoices.length === 0 ? 'Aucune facture trouvée' : 'Aucune facture correspondant à votre recherche'}
                 </td></tr>
               ) : (
                 <>
-                  {unprintedInvoices.length > 0 && (
-                    <tr className="bg-yellow-50">
-                      <td colSpan={7} className="px-4 py-2 font-bold text-yellow-800 text-lg">Factures non imprimées</td>
+                  {awaitingReceipt.length > 0 && (
+                    <tr className="bg-[#FFF4CE]">
+                      <td colSpan={8} className="px-4 py-2 font-semibold text-[#323130]">En attente de paiement</td>
                     </tr>
                   )}
-                  {unprintedInvoices.map((inv) => (
-                    <React.Fragment key={inv.id}>
-                      <tr className="border-t">
-                        <td className="px-4 py-2 font-mono">{inv.invoiceNumber}</td>
-                        <td className="px-4 py-2">{formatPatientDisplayName(inv.patient)}</td>
-                        <td className="px-4 py-2">{inv.patient.folderNumber}</td>
-                        <td className="px-4 py-2">{formatInvoiceAmount(inv)}</td>
-                        <td className="px-4 py-2">
-                          <span className={
-                            inv.status === 'pending' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded' :
-                            inv.status === 'paid' ? 'bg-green-100 text-green-800 px-2 py-1 rounded' :
-                            inv.status === 'cancelled' ? 'bg-red-100 text-red-800 px-2 py-1 rounded' :
-                            'bg-gray-100 text-gray-800 px-2 py-1 rounded'
-                          }>
-                            {inv.status === 'cancelled' ? 'Annulée' : inv.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          {inv.printed ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}
-                        </td>
-                        <td className="px-4 py-2 space-x-2">
-                          {inv.status === 'cancelled' ? (
-                            <span className="text-red-600 font-bold text-sm">
-                              ❌ Facture annulée
-                            </span>
-                          ) : !inv.printed && !printedInSession.has(inv.id) ? (
-                            <>
-                              <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" title="Modifier" onClick={() => handleEdit(inv)}>
-                                Modifier
-                              </button>
-                              <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded" title="Imprimer" onClick={() => handlePrint(inv)} disabled={printingId === inv.id}>
-                                {printingId === inv.id ? 'Impression...' : 'Imprimer'}
-                              </button>
-                              <button 
-                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" 
-                                title="Annuler" 
-                                onClick={() => handleCancel(inv)} 
-                                disabled={cancellingId === inv.id}
-                              >
-                                {cancellingId === inv.id ? 'Annulation...' : 'Annuler'}
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-green-600 font-bold text-sm">
-                              ✅ Facture imprimée
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                      {/* Détail de tous les items de la facture */}
-                      <tr className={inv.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}>
-                        <td colSpan={7} className="px-4 py-2">
-                          <div className="font-semibold text-blue-700 mb-1">Détails de la facture :</div>
-                          <table className="w-full text-sm mb-2">
-                            <thead>
-                              <tr>
-                                <th className="text-left">Type</th>
-                                <th className="text-left">Description</th>
-                                <th className="text-left">Quantité</th>
-                                <th className="text-left">Prix unitaire</th>
-                                <th className="text-left">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {inv.items.map(item => (
-                                <tr key={item.id}>
-                                  <td>{item.type}</td>
-                                  <td>{item.description}</td>
-                                  <td>{item.quantity}</td>
-                                  <td>{formatItemUnitPrice(item)}</td>
-                                  <td>{formatItemPrice(item)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  ))}
-                  {printedInvoices.length > 0 && (
-                    <tr className="bg-gray-100">
-                      <td colSpan={7} className="px-4 py-2 font-bold text-gray-700 text-lg">Factures imprimées</td>
+                  {renderInvoiceRows(awaitingReceipt)}
+                  {paidReceipts.length > 0 && (
+                    <tr className="bg-[#DFF6DD]">
+                      <td colSpan={8} className="px-4 py-2 font-semibold text-[#323130]">Reçus imprimés</td>
                     </tr>
                   )}
-                  {printedInvoices.map((inv) => (
-                    <React.Fragment key={inv.id}>
-                      <tr className="border-t">
-                        <td className="px-4 py-2 font-mono">{inv.invoiceNumber}</td>
-                        <td className="px-4 py-2">{formatPatientDisplayName(inv.patient)}</td>
-                        <td className="px-4 py-2">{inv.patient.folderNumber}</td>
-                        <td className="px-4 py-2">{formatInvoiceAmount(inv)}</td>
-                        <td className="px-4 py-2">
-                          <span className={
-                            inv.status === 'pending' ? 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded' :
-                            inv.status === 'paid' ? 'bg-green-100 text-green-800 px-2 py-1 rounded' :
-                            inv.status === 'cancelled' ? 'bg-red-100 text-red-800 px-2 py-1 rounded' :
-                            'bg-gray-100 text-gray-800 px-2 py-1 rounded'
-                          }>
-                            {inv.status === 'cancelled' ? 'Annulée' : inv.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          {inv.printed ? <span className="text-green-600 font-bold">Oui</span> : <span className="text-gray-400">Non</span>}
-                        </td>
-                        <td className="px-4 py-2 space-x-2">
-                          {inv.status === 'cancelled' ? (
-                            <span className="text-red-600 font-bold text-sm">
-                              ❌ Facture annulée
-                            </span>
-                          ) : !inv.printed && !printedInSession.has(inv.id) ? (
-                            <>
-                              <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded" title="Modifier" onClick={() => handleEdit(inv)}>
-                                Modifier
-                              </button>
-                              <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded" title="Imprimer" onClick={() => handlePrint(inv)} disabled={printingId === inv.id}>
-                                {printingId === inv.id ? 'Impression...' : 'Imprimer'}
-                              </button>
-                              <button 
-                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded" 
-                                title="Annuler" 
-                                onClick={() => handleCancel(inv)} 
-                                disabled={cancellingId === inv.id}
-                              >
-                                {cancellingId === inv.id ? 'Annulation...' : 'Annuler'}
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-green-600 font-bold text-sm">
-                              ✅ Facture imprimée
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                      {/* Détail de tous les items de la facture */}
-                      <tr className={inv.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}>
-                        <td colSpan={7} className="px-4 py-2">
-                          <div className="font-semibold text-blue-700 mb-1">Détails de la facture :</div>
-                          <table className="w-full text-sm mb-2">
-                            <thead>
-                              <tr>
-                                <th className="text-left">Type</th>
-                                <th className="text-left">Description</th>
-                                <th className="text-left">Quantité</th>
-                                <th className="text-left">Prix unitaire</th>
-                                <th className="text-left">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {inv.items.map(item => (
-                                <tr key={item.id}>
-                                  <td>{item.type}</td>
-                                  <td>{item.description}</td>
-                                  <td>{item.quantity}</td>
-                                  <td>{formatItemUnitPrice(item)}</td>
-                                  <td>{formatItemPrice(item)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  ))}
+                  {renderInvoiceRows(paidReceipts)}
+                  {cancelledInvoices.length > 0 && (
+                    <tr className="bg-[#F3F2F1]">
+                      <td colSpan={8} className="px-4 py-2 font-semibold text-[#323130]">Annulées</td>
+                    </tr>
+                  )}
+                  {renderInvoiceRows(cancelledInvoices)}
                 </>
               )}
             </tbody>
           </table>
         </div>
       )}
+      {printTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div role="dialog" aria-modal="true" aria-labelledby="print-choice-title" className="bg-white border border-[#EDEBE9] rounded-sm w-full max-w-md">
+            <div className="px-5 py-4 border-b border-[#EDEBE9]">
+              <h2 id="print-choice-title" className="text-lg font-semibold text-[#323130]">Imprimer {printTarget.invoiceNumber}</h2>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <label className="flex items-start gap-3 border border-[#EDEBE9] p-3 cursor-pointer">
+                <input type="checkbox" className="mt-1" checked={printFacture} onChange={e => setPrintFacture(e.target.checked)} />
+                <span>
+                  <span className="block font-semibold text-[#323130]">Facture</span>
+                  <span className="block text-sm text-[#605E5C]">Copie pour le patient. Aucun effet sur les comptes, la facture reste en attente.</span>
+                  {printTarget.printed && <span className="block text-sm text-[#605E5C] mt-1">Déjà imprimée. Une nouvelle copie ne change rien.</span>}
+                </span>
+              </label>
+              <label className="flex items-start gap-3 border border-[#EDEBE9] p-3 cursor-pointer">
+                <input type="checkbox" className="mt-1" checked={printRecu} onChange={e => setPrintRecu(e.target.checked)} />
+                <span>
+                  <span className="block font-semibold text-[#323130]">Reçu</span>
+                  <span className="block text-sm text-[#605E5C]">À imprimer au paiement. C'est ce document qui enregistre l'entrée.</span>
+                  {printTarget.status === 'paid' && <span className="block text-sm text-[#605E5C] mt-1">Déjà encaissé. Une nouvelle copie ne compte pas une seconde fois.</span>}
+                </span>
+              </label>
+            </div>
+            <div className="px-5 py-4 border-t border-[#EDEBE9] flex justify-end gap-2">
+              <button type="button" className="px-3 py-1.5 border border-[#8A8886] text-[#323130] rounded-sm" onClick={() => setPrintTarget(null)}>Fermer</button>
+              <button type="button" className="px-3 py-1.5 bg-[#0078D4] text-white rounded-sm disabled:opacity-50" disabled={!printFacture && !printRecu} onClick={confirmPrint}>Imprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal d'édition de facture — scroll interne + pied fixe (petits écrans) */}
       {editInvoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black bg-opacity-40 overflow-y-auto overscroll-y-contain">

@@ -7,6 +7,8 @@ const PDGOverview: React.FC = () => {
   const [lowStockCount, setLowStockCount] = useState<number | null>(null);
   const [revenue, setRevenue] = useState<number | null>(null);
   const [revenueByType, setRevenueByType] = useState({ consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
+  const [pendingInvoiceCount, setPendingInvoiceCount] = useState<number | null>(null);
+  const [pendingByType, setPendingByType] = useState({ consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
   const [pendingSupplyRequests, setPendingSupplyRequests] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,12 +22,15 @@ const PDGOverview: React.FC = () => {
       setLowStockCount(res.data.lowStockCount ?? 0);
       setRevenue(res.data.revenue ?? 0);
       setRevenueByType(res.data.revenueByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
+      setPendingInvoiceCount(res.data.pendingInvoiceCount ?? 0);
+      setPendingByType(res.data.pendingByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
       setPendingSupplyRequests(res.data.pendingSupplyRequests ?? 0);
       } catch {
         setEmployeeCount(0);
         setPatientCount(0);
         setLowStockCount(0);
         setRevenue(0);
+        setPendingInvoiceCount(0);
         setPendingSupplyRequests(0);
       } finally {
         setLoading(false);
@@ -62,6 +67,20 @@ const PDGOverview: React.FC = () => {
     } else {
       return '0 $';
     }
+  };
+
+  const formatPending = () => {
+    const consultationAmountFC = pendingByType.consultation || 0;
+    const otherAmountUSD = (pendingByType.exam || 0) +
+      (pendingByType.medication || 0) +
+      (pendingByType.hospitalization || 0) +
+      (pendingByType.act || 0);
+    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
+      return `${consultationAmountFC.toLocaleString('fr-FR')} FC + ${otherAmountUSD.toLocaleString('fr-FR')} $`;
+    }
+    if (consultationAmountFC > 0) return `${consultationAmountFC.toLocaleString('fr-FR')} FC`;
+    if (otherAmountUSD > 0) return `${otherAmountUSD.toLocaleString('fr-FR')} $`;
+    return '0 $';
   };
 
   return (
@@ -126,7 +145,7 @@ const PDGOverview: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <div>
-                <div className="text-sm font-medium text-gray-500 truncate">Chiffre d'affaires</div>
+                <div className="text-sm font-medium text-gray-500 truncate">Entrées (reçus)</div>
                 <div className="text-lg font-medium text-gray-900">{formatTotalRevenue()}</div>
                 <div className="mt-2 text-xs text-gray-500">
                   <div>Consultations : <span className="font-semibold text-gray-700">{revenueByType.consultation.toLocaleString('fr-FR')} FC</span></div>
@@ -135,6 +154,18 @@ const PDGOverview: React.FC = () => {
                   <div>Médicaments : <span className="font-semibold text-gray-700">{revenueByType.medication.toLocaleString('fr-FR')} $</span></div>
                   <div>Hospitalisations : <span className="font-semibold text-gray-700">{revenueByType.hospitalization.toLocaleString('fr-FR')} $</span></div>
                 </div>
+              </div>
+            </div>
+          </div>
+          <div key="stat-pending-invoices" className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5 flex items-center">
+              <svg className="h-6 w-6 text-yellow-600 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <div className="text-sm font-medium text-gray-500 truncate">Factures en attente</div>
+                <div className="text-lg font-medium text-gray-900">{pendingInvoiceCount}</div>
+                <div className="mt-1 text-xs text-gray-500">{formatPending()}</div>
               </div>
             </div>
           </div>
