@@ -13,16 +13,7 @@ import HospitalisationsHospitalisation from './HospitalisationsHospitalisation';
 import { apiClient } from '../../utils/apiClient';
 
 // Fonction helper pour ajouter l'authentification aux appels axios
-const authenticatedAxios = {
-  get: (url: string) => {
-    const token = localStorage.getItem('token');
-    return apiClient.get(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  }
-};
+const authenticatedAxios = apiClient;
 
 interface HospitalizationStats {
   total: number;

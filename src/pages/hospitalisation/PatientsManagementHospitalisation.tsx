@@ -1,32 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../utils/apiClient';
 
-const authenticatedAxios = {
-  get: (url: string) => {
-    const token = localStorage.getItem('token');
-    return apiClient.get(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  },
-  post: (url: string, data: any) => {
-    const token = localStorage.getItem('token');
-    return apiClient.post(url, data, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  },
-  patch: (url: string, data: any) => {
-    const token = localStorage.getItem('token');
-    return apiClient.patch(url, data, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-  }
-};
+const authenticatedAxios = apiClient;
 
 function calculateAge(dateNaissance: string) {
   if (!dateNaissance) return '';

@@ -84,13 +84,6 @@ const SupplyRequests: React.FC = () => {
   const [selectedMedications, setSelectedMedications] = useState<{ [key: number]: string }>({});
 
   useEffect(() => {
-    // Vérifier l'authentification
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setError('Vous devez être connecté pour accéder à cette page. Veuillez vous connecter.');
-      return;
-    }
-
     fetchRequests();
     fetchMedications();
     setError(null);
@@ -322,19 +315,6 @@ const SupplyRequests: React.FC = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
-
-    // Vérification manuelle de l'authentification avant soumission
-    const token = localStorage.getItem('token');
-    console.log('🔐 Vérification manuelle du token dans handleSubmit:');
-    console.log('🔐 Token présent:', token ? 'OUI' : 'NON');
-    console.log('🔐 Longueur du token:', token?.length);
-    console.log('🔐 Début du token:', token?.substring(0, 20) + '...');
-
-    if (!token) {
-      setError('Token d\'authentification manquant. Veuillez vous reconnecter.');
-      setLoading(false);
-      return;
-    }
 
     try {
       console.log('=== DÉBUT SOUMISSION FORMULAIRE ===');

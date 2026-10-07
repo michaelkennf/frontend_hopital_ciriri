@@ -47,8 +47,19 @@ const DatabaseBackup: React.FC = () => {
     }
   };
 
-  const handleDownloadBackup = (backup: Backup) => {
-    window.open(`/api/backup/${backup.filename}`, '_blank');
+  const handleDownloadBackup = async (backup: Backup) => {
+    setError(null);
+    try {
+      const res = await apiClient.get(`/api/backup/${backup.filename}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(res.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = backup.filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      setError('Erreur lors du téléchargement de la sauvegarde');
+    }
   };
 
   const handleDeleteBackup = async (backup: Backup) => {

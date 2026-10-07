@@ -23,13 +23,6 @@ const CaissierOverview: React.FC = () => {
       try {
         console.log('🔄 Chargement des statistiques caissier...');
         
-        // Vérifier le token
-        const token = localStorage.getItem('token');
-        console.log('🔑 Token présent:', !!token);
-        if (token) {
-          console.log('🔑 Token:', token.substring(0, 20) + '...');
-        }
-        
         // Appels API en parallèle
         const [patientsRes, examsRes, salesRes] = await Promise.allSettled([
           apiClient.get('/api/patients'),

@@ -18,11 +18,18 @@ export default defineConfig({
     host: '0.0.0.0',
     strictPort: true,
     allowedHosts: [
-      'polyclinique.fikiri.org',
+      'polycliniquedesapotres.org',
+      'www.polycliniquedesapotres.org',
       'localhost',
       '127.0.0.1',
-      '.fikiri.org'
+      '.polycliniquedesapotres.org'
     ],
+    headers: {
+      'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.polycliniquedesapotres.org http://localhost:4007 http://localhost:5000; connect-src 'self' https://api.polycliniquedesapotres.org http://localhost:4007 http://localhost:5000; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'",
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'X-Frame-Options': 'DENY',
+    },
   },
   build: {
     outDir: 'dist',

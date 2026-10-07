@@ -287,9 +287,7 @@ const ConsultationsList: React.FC = () => {
       // Synchronisation conditionnelle après un délai
       setTimeout(async () => {
         try {
-          const res = await apiClient.get('/api/invoices', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          });
+          const res = await apiClient.get('/api/invoices');
           const consultationsIds: number[] = [];
           for (const invoice of res.data.invoices || []) {
             for (const item of invoice.items || []) {

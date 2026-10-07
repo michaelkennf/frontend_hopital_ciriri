@@ -10,21 +10,15 @@ const createApiClient = () => {
   const client = axios.create({
     baseURL,
     timeout: 30000,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
     },
   });
 
-  // Intercepteur de requête pour ajouter le token
   client.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-        console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url} - Token: ${token.substring(0, 20)}...`);
-      } else {
-        console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url} - No token`);
-      }
+      console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url}`);
       return config;
     },
     (error) => {
@@ -44,12 +38,6 @@ const createApiClient = () => {
         throw new Error(response.data.error || 'Erreur API');
       }
       
-      // Gérer le refresh de token
-      if (response.headers['new-token']) {
-        console.log('[API] Nouveau token reçu, mise à jour...');
-        localStorage.setItem('token', response.headers['new-token']);
-      }
-      
       return response;
     },
     (error) => {
@@ -57,10 +45,11 @@ const createApiClient = () => {
       
       // Gérer les erreurs spécifiques
       if (error.response?.status === 401) {
-        console.error('[API] Token expiré ou invalide');
+        const url = String(error.config?.url || '');
         localStorage.removeItem('token');
-        // Rediriger vers la page de connexion
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login' && !url.includes('/api/auth/login')) {
+          window.location.href = '/login';
+        }
       } else if (error.response?.status === 403) {
         console.error('[API] Accès refusé');
       } else if (error.response?.status === 404) {

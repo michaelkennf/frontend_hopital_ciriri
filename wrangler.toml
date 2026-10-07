@@ -7,7 +7,7 @@ pages_build_output_dir = "./dist"
 
 [env.production]
   # URL du backend via Caddy (sans /api car le sous-domaine pointe déjà vers le backend)
-  VITE_API_URL = "https://api.polyclinique.fikiri.org"
+  VITE_API_URL = "https://api.polycliniquedesapotres.org"
 
 [env.preview]
   # URL du backend local pour le développement

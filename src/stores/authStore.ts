@@ -57,16 +57,12 @@ export const useAuthStore = create<AuthStore>()(
             password
           });
 
-          console.log('[AUTH STORE] Réponse de connexion:', response.data);
-          const { token, user } = response.data;
+          const { user } = response.data;
+          localStorage.removeItem('token');
           
-          // Sauvegarder le token
-          localStorage.setItem('token', token);
-          
-          // Mettre à jour l'état
           set({
             user,
-            token,
+            token: null,
             isLoading: false,
             error: null
           });
@@ -122,45 +118,24 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       checkAuth: async () => {
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-          console.log('[AUTH STORE] Aucun token trouvé');
-          set({ isLoading: false });
-          return;
-        }
-
-        // Éviter les appels répétés si déjà en cours
         if (get().isLoading) {
-          console.log('[AUTH STORE] Vérification déjà en cours, ignoré');
           return;
         }
 
-        // Éviter les appels répétés si l'utilisateur est déjà chargé
-        if (get().user && get().token) {
-          console.log('[AUTH STORE] Utilisateur déjà chargé, ignoré');
-          return;
-        }
-
-        console.log('[AUTH STORE] Vérification du token...');
         set({ isLoading: true });
-        
         
         try {
           const response = await apiClient.get('/api/auth/verify');
           const { user } = response.data;
-          
-          console.log('[AUTH STORE] Token valide, utilisateur:', { id: user.id, email: user.email, role: user.role });
+          localStorage.removeItem('token');
           
           set({
             user,
-            token,
+            token: null,
             isLoading: false,
             error: null
           });
-        } catch (error: any) {
-          console.log('[AUTH STORE] Token invalide, nettoyage...', error.response?.status);
-          // Token invalide, nettoyer l'état
+        } catch {
           localStorage.removeItem('token');
           set({
             user: null,
@@ -182,8 +157,7 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        user: state.user,
-        token: state.token
+        user: state.user
       })
     }
   )

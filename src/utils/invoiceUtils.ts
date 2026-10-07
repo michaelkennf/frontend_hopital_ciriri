@@ -4,11 +4,12 @@ import axios from 'axios';
 // Configuration de l'API avec gestion des environnements
 const getApiConfig = () => {
   const baseURL = import.meta.env.VITE_API_URL || 
-    (import.meta.env.PROD ? 'https://api.polyclinique.fikiri.org' : 'http://localhost:5000');
+    (import.meta.env.PROD ? 'https://api.polycliniquedesapotres.org' : 'http://localhost:5000');
   
   return {
     baseURL,
     timeout: 30000,
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json'
     }
@@ -20,12 +21,10 @@ export const fetchInvoices = async (patientId?: string) => {
   try {
     console.log('[INVOICE UTILS] Début de la récupération des factures...');
     
-    const token = localStorage.getItem('token');
     const config = getApiConfig();
     
     console.log('[INVOICE UTILS] Configuration:', {
       baseURL: config.baseURL,
-      hasToken: !!token,
       patientId: patientId || 'tous'
     });
 
@@ -43,8 +42,7 @@ export const fetchInvoices = async (patientId?: string) => {
       url,
       method: 'GET',
       headers: {
-        ...config.headers,
-        ...(token && { 'Authorization': `Bearer ${token}` })
+        ...config.headers
       }
     };
 
@@ -135,7 +133,6 @@ const makeRequestWithRetry = async (config: any, maxRetries = 3) => {
 // Fonction pour récupérer les détails d'une facture
 export const fetchInvoiceDetails = async (invoiceId: number) => {
   try {
-    const token = localStorage.getItem('token');
     const config = getApiConfig();
     
     const response = await axios({
@@ -143,8 +140,7 @@ export const fetchInvoiceDetails = async (invoiceId: number) => {
       url: `${config.baseURL}/api/invoices/${invoiceId}`,
       method: 'GET',
       headers: {
-        ...config.headers,
-        ...(token && { 'Authorization': `Bearer ${token}` })
+        ...config.headers
       }
     });
 
@@ -165,7 +161,6 @@ export const fetchInvoiceDetails = async (invoiceId: number) => {
 // Fonction pour mettre à jour une facture
 export const updateInvoice = async (invoiceId: number, updates: any) => {
   try {
-    const token = localStorage.getItem('token');
     const config = getApiConfig();
     
     const response = await axios({
@@ -174,8 +169,7 @@ export const updateInvoice = async (invoiceId: number, updates: any) => {
       method: 'PUT',
       data: updates,
       headers: {
-        ...config.headers,
-        ...(token && { 'Authorization': `Bearer ${token}` })
+        ...config.headers
       }
     });
 
@@ -197,8 +191,7 @@ export const diagnoseInvoiceIssues = async () => {
   const diagnostics = {
     environment: import.meta.env.MODE,
     apiUrl: import.meta.env.VITE_API_URL,
-    hasToken: !!localStorage.getItem('token'),
-    tokenLength: localStorage.getItem('token')?.length || 0,
+    session: 'cookie',
     timestamp: new Date().toISOString()
   };
 
