@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../utils/apiClient';
+import CashPeriodSummary from '../../components/CashPeriodSummary';
 
 const CaissierOverview: React.FC = () => {
   const [stats, setStats] = useState({
@@ -15,6 +16,8 @@ const CaissierOverview: React.FC = () => {
     loading: true,
     error: null as string | null
   });
+  const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
+  const [approvedSupplies, setApprovedSupplies] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -24,10 +27,12 @@ const CaissierOverview: React.FC = () => {
         console.log('🔄 Chargement des statistiques caissier...');
         
         // Appels API en parallèle
-        const [patientsRes, examsRes, salesRes] = await Promise.allSettled([
+        const [patientsRes, examsRes, salesRes, invoicesRes, suppliesRes] = await Promise.allSettled([
           apiClient.get('/api/patients'),
           apiClient.get('/api/exams/realized'),
-          apiClient.get('/api/medications/sales')
+          apiClient.get('/api/medications/sales'),
+          apiClient.get('/api/invoices'),
+          apiClient.get('/api/supply-requests')
         ]);
 
         const today = new Date();
@@ -75,6 +80,11 @@ const CaissierOverview: React.FC = () => {
         } else {
           console.error('❌ Erreur ventes médicaments:', salesRes.reason);
         }
+
+        const invoices = invoicesRes.status === 'fulfilled' ? (invoicesRes.value.data.invoices || []) : [];
+        const supplies = suppliesRes.status === 'fulfilled' ? (suppliesRes.value.data.requests || []) : [];
+        setPaidInvoices(invoices.filter((invoice: any) => invoice.status === 'paid'));
+        setApprovedSupplies(supplies.filter((request: any) => request.status === 'approved'));
 
         // Calcul des statistiques
         const newStats = {
@@ -135,8 +145,11 @@ const CaissierOverview: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Tableau de bord Caissier</h1>
-        <p className="mt-1 text-sm text-gray-500">Vue d'ensemble dynamique du caissier</p>
+        <p className="mt-1 text-sm text-gray-500">Les entrées sont les reçus imprimés. Les sorties sont les approvisionnements approuvés. La semaine commence le lundi.</p>
       </div>
+      {!stats.loading && (
+        <CashPeriodSummary invoices={paidInvoices} supplies={approvedSupplies} showLists />
+      )}
 
       {/* Affichage des erreurs */}
       {stats.error && (

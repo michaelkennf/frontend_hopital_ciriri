@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../utils/apiClient';
 
 const functions = ['Médecin', 'Infirmier(ère)', 'Sentinelle', 'Fille de salle', 'Caissier(e)', 'Pharmacien(ne)', 'P.P', 'Laborantin(e)', 'Biologiste Médical', 'Administrateur Gestionnaire', 'Directeur de Nursing', 'Médecin Directeur', 'Médecin chef de Staff', 'Logisticien(ne)', 'Réceptionniste', 'Sage femme/Accoucheuse'];
+const educationLevels = ['Diplôme d\'État', 'Grade', 'Licence', 'Autre'];
+const emptyForm = {
+  firstName: '',
+  lastName: '',
+  postNom: '',
+  address: '',
+  dateOfBirth: '',
+  maritalStatus: '',
+  salary: '',
+  function: '',
+  contact: '',
+  sexe: '',
+  educationLevel: '',
+  educationOther: '',
+  institution: ''
+};
 
 const EmployeesManagement = () => {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -9,18 +25,8 @@ const EmployeesManagement = () => {
   const [showForm, setShowForm] = useState<boolean>(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    postNom: '',
-    address: '',
-    dateOfBirth: '',
-    maritalStatus: '',
-    salary: '',
-    function: '',
-    contact: '',
-    sexe: ''
-  });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ ...emptyForm });
 
   useEffect(() => {
     fetchEmployees();
@@ -45,11 +51,19 @@ const EmployeesManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.educationLevel === 'Autre' && !formData.educationOther.trim()) {
+      setFormError('Précisez le niveau d\'étude.');
+      return;
+    }
+    setFormError(null);
     try {
       const employeeData = {
         ...formData,
         salary: parseFloat(formData.salary),
-        dateOfBirth: formData.dateOfBirth || null
+        dateOfBirth: formData.dateOfBirth || null,
+        educationLevel: formData.educationLevel || null,
+        educationOther: formData.educationLevel === 'Autre' ? formData.educationOther.trim() : null,
+        institution: formData.institution || null
       };
 
       if (editingEmployee) {
@@ -60,7 +74,7 @@ const EmployeesManagement = () => {
         setSuccess('Employé enregistré avec succès !');
       }
 
-      setFormData({firstName: '', lastName: '', postNom: '', address: '', dateOfBirth: '', maritalStatus: '', salary: '', function: '', contact: '', sexe: ''});
+      setFormData({ ...emptyForm });
       setEditingEmployee(null);
       setShowForm(false);
       fetchEmployees();
@@ -81,8 +95,11 @@ const EmployeesManagement = () => {
       maritalStatus: employee.maritalStatus,
       salary: employee.salary?.toString() || '',
       function: employee.function,
-      contact: employee.phone, // Le backend stocke le contact dans 'phone'
-      sexe: employee.sexe
+      contact: employee.phone,
+      sexe: employee.sexe,
+      educationLevel: employee.educationLevel || '',
+      educationOther: employee.educationOther || '',
+      institution: employee.institution || ''
     });
     setShowForm(true);
   };
@@ -101,7 +118,7 @@ const EmployeesManagement = () => {
   };
 
   const resetForm = () => {
-    setFormData({firstName: '', lastName: '', postNom: '', address: '', dateOfBirth: '', maritalStatus: '', salary: '', function: '', contact: '', sexe: ''});
+    setFormData({ ...emptyForm });
     setEditingEmployee(null);
   };
 
@@ -147,6 +164,9 @@ const EmployeesManagement = () => {
             {editingEmployee ? 'Modifier l\'employé' : 'Ajouter un nouvel employé'}
           </h2>
           <form onSubmit={handleSubmit} className='space-y-4'>
+            {formError && (
+              <div className='p-3 border border-red-300 bg-red-50 text-red-800 text-sm'>{formError}</div>
+            )}
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
                 <label className='block text-sm font-medium text-gray-700 mb-1'>Prénom *</label>
@@ -264,6 +284,42 @@ const EmployeesManagement = () => {
                   className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
               </div>
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>Niveau d'étude</label>
+                <select
+                  name='educationLevel'
+                  value={formData.educationLevel}
+                  onChange={handleInputChange}
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                >
+                  <option value=''>Sélectionner</option>
+                  {educationLevels.map((level) => (
+                    <option key={level} value={level}>{level}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.educationLevel === 'Autre' && (
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-1'>Préciser le niveau *</label>
+                  <input
+                    type='text'
+                    name='educationOther'
+                    value={formData.educationOther}
+                    onChange={handleInputChange}
+                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  />
+                </div>
+              )}
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>Institution</label>
+                <input
+                  type='text'
+                  name='institution'
+                  value={formData.institution}
+                  onChange={handleInputChange}
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                />
+              </div>
             </div>
             <div className='flex gap-4 pt-4'>
               <button type='submit' className='bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg'>
@@ -338,6 +394,12 @@ const EmployeesManagement = () => {
                         </div>
                         <div className='text-sm text-gray-600'>
                           <strong>Salaire:</strong> ${employee.salary?.toLocaleString() || '0'} USD
+                        </div>
+                        <div className='text-sm text-gray-600'>
+                          <strong>Niveau d'étude:</strong> {employee.educationLevel === 'Autre' ? (employee.educationOther || 'Autre') : (employee.educationLevel || 'Non renseigné')}
+                        </div>
+                        <div className='text-sm text-gray-600'>
+                          <strong>Institution:</strong> {employee.institution || 'Non renseignée'}
                         </div>
                       </div>
                     </td>

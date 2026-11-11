@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../utils/apiClient';
+import CashPeriodSummary from '../../components/CashPeriodSummary';
 
 const PDGOverview: React.FC = () => {
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
@@ -10,13 +11,19 @@ const PDGOverview: React.FC = () => {
   const [pendingInvoiceCount, setPendingInvoiceCount] = useState<number | null>(null);
   const [pendingByType, setPendingByType] = useState({ consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
   const [pendingSupplyRequests, setPendingSupplyRequests] = useState<number | null>(null);
+  const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
+  const [approvedSupplies, setApprovedSupplies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Nouvelle fonction pour charger les stats (réutilisable)
     const fetchStats = async () => {
       setLoading(true);
       try {
-      const res = await apiClient.get('/api/stats');
+      const [res, invoicesRes, suppliesRes] = await Promise.all([
+        apiClient.get('/api/stats'),
+        apiClient.get('/api/invoices'),
+        apiClient.get('/api/supply-requests')
+      ]);
       setEmployeeCount(res.data.employeeCount ?? 0);
       setPatientCount(res.data.patientCount ?? 0);
       setLowStockCount(res.data.lowStockCount ?? 0);
@@ -25,6 +32,10 @@ const PDGOverview: React.FC = () => {
       setPendingInvoiceCount(res.data.pendingInvoiceCount ?? 0);
       setPendingByType(res.data.pendingByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
       setPendingSupplyRequests(res.data.pendingSupplyRequests ?? 0);
+      const invoices = invoicesRes.data.invoices || [];
+      const supplies = suppliesRes.data.requests || [];
+      setPaidInvoices(invoices.filter((invoice: any) => invoice.status === 'paid'));
+      setApprovedSupplies(supplies.filter((request: any) => request.status === 'approved'));
       } catch {
         setEmployeeCount(0);
         setPatientCount(0);
@@ -32,6 +43,8 @@ const PDGOverview: React.FC = () => {
         setRevenue(0);
         setPendingInvoiceCount(0);
         setPendingSupplyRequests(0);
+        setPaidInvoices([]);
+        setApprovedSupplies([]);
       } finally {
         setLoading(false);
       }
@@ -101,7 +114,12 @@ const PDGOverview: React.FC = () => {
           )}
         </button>
       </div>
-      <p className="text-gray-600 mb-6">Vue d'ensemble des données de l'hôpital, statistiques, alertes, etc.</p>
+      <p className="text-gray-600 mb-6">Les entrées sont les reçus imprimés. Les sorties sont les approvisionnements approuvés. La semaine commence le lundi.</p>
+      {!loading && (
+        <div className="mb-6">
+          <CashPeriodSummary invoices={paidInvoices} supplies={approvedSupplies} />
+        </div>
+      )}
       {loading ? (
         <div className="text-center py-8">Chargement...</div>
       ) : (

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../utils/apiClient';
+import CashPeriodSummary from '../../components/CashPeriodSummary';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -25,6 +26,8 @@ const FinancialDashboard: React.FC = () => {
   const [incomeDetails, setIncomeDetails] = useState<any[]>([]);
   const [pendingDetails, setPendingDetails] = useState<any[]>([]);
   const [expenseDetails, setExpenseDetails] = useState<any[]>([]);
+  const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
+  const [approvedSupplies, setApprovedSupplies] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
@@ -55,6 +58,9 @@ const FinancialDashboard: React.FC = () => {
       
       const receiptInvoices = invoices.filter((i: any) => i.status === 'paid');
       const pendingInvoices = invoices.filter((i: any) => i.status === 'pending');
+      const approvedRequests = supplyRequests.filter((r: any) => r.status === 'approved');
+      setPaidInvoices(receiptInvoices);
+      setApprovedSupplies(approvedRequests);
 
       const entryDate = (i: any) => i.paidDate || i.createdAt;
       const validInvoices = receiptInvoices.filter((i: any) => {
@@ -275,7 +281,12 @@ const FinancialDashboard: React.FC = () => {
           )}
         </button>
       </div>
-      <p className="text-gray-600 mb-6">Les entrées correspondent aux reçus imprimés. Les factures dont le reçu n'a pas encore été imprimé restent en attente.</p>
+      <p className="text-gray-600 mb-6">Les entrées correspondent aux reçus imprimés. Les sorties sont les approvisionnements approuvés. La semaine commence le lundi.</p>
+      {!loading && (
+        <div className="mb-8">
+          <CashPeriodSummary invoices={paidInvoices} supplies={approvedSupplies} />
+        </div>
+      )}
       {error && <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{error}</div>}
       {loading ? (
         <div className="text-center py-8">Chargement...</div>
