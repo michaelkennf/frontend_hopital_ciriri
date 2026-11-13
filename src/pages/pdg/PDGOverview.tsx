@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../utils/apiClient';
 import CashPeriodSummary from '../../components/CashPeriodSummary';
+import { formatTotals } from '../../utils/cashPeriods';
 
 const PDGOverview: React.FC = () => {
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
   const [patientCount, setPatientCount] = useState<number | null>(null);
   const [lowStockCount, setLowStockCount] = useState<number | null>(null);
   const [revenue, setRevenue] = useState<number | null>(null);
-  const [revenueByType, setRevenueByType] = useState({ consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
+  const emptySplit = { consultation: { fc: 0, usd: 0 }, exam: { fc: 0, usd: 0 }, medication: { fc: 0, usd: 0 }, hospitalization: { fc: 0, usd: 0 }, act: { fc: 0, usd: 0 } };
+  const [revenueByTypeCurrency, setRevenueByTypeCurrency] = useState(emptySplit);
   const [pendingInvoiceCount, setPendingInvoiceCount] = useState<number | null>(null);
-  const [pendingByType, setPendingByType] = useState({ consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
+  const [pendingCurrency, setPendingCurrency] = useState({ fc: 0, usd: 0 });
   const [pendingSupplyRequests, setPendingSupplyRequests] = useState<number | null>(null);
   const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
   const [approvedSupplies, setApprovedSupplies] = useState<any[]>([]);
@@ -28,9 +30,9 @@ const PDGOverview: React.FC = () => {
       setPatientCount(res.data.patientCount ?? 0);
       setLowStockCount(res.data.lowStockCount ?? 0);
       setRevenue(res.data.revenue ?? 0);
-      setRevenueByType(res.data.revenueByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
+      setRevenueByTypeCurrency(res.data.revenueByTypeCurrency ?? emptySplit);
       setPendingInvoiceCount(res.data.pendingInvoiceCount ?? 0);
-      setPendingByType(res.data.pendingByType ?? { consultation: 0, exam: 0, medication: 0, hospitalization: 0, act: 0 });
+      setPendingCurrency(res.data.pendingCurrency ?? { fc: 0, usd: 0 });
       setPendingSupplyRequests(res.data.pendingSupplyRequests ?? 0);
       const invoices = invoicesRes.data.invoices || [];
       const supplies = suppliesRes.data.requests || [];
@@ -41,7 +43,9 @@ const PDGOverview: React.FC = () => {
         setPatientCount(0);
         setLowStockCount(0);
         setRevenue(0);
+        setRevenueByTypeCurrency(emptySplit);
         setPendingInvoiceCount(0);
+        setPendingCurrency({ fc: 0, usd: 0 });
         setPendingSupplyRequests(0);
         setPaidInvoices([]);
         setApprovedSupplies([]);
@@ -58,43 +62,17 @@ const PDGOverview: React.FC = () => {
   }, []);
 
   // Fonctions pour séparer les devises
-  const calculateRevenueByCurrency = () => {
-    const consultationAmountFC = revenueByType.consultation || 0;
-    const otherAmountUSD = (revenueByType.exam || 0) + 
-                           (revenueByType.medication || 0) + 
-                           (revenueByType.hospitalization || 0) + 
-                           (revenueByType.act || 0);
-    
-    return { consultationAmountFC, otherAmountUSD };
+  const formatSplit = (split: { fc: number; usd: number }) => {
+    if (split.fc === 0 && split.usd === 0) return '0 FC';
+    return formatTotals(split);
   };
 
-  const formatTotalRevenue = () => {
-    const { consultationAmountFC, otherAmountUSD } = calculateRevenueByCurrency();
-    
-    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
-      return `${consultationAmountFC.toLocaleString('fr-FR')} FC + ${otherAmountUSD.toLocaleString('fr-FR')} $`;
-    } else if (consultationAmountFC > 0) {
-      return `${consultationAmountFC.toLocaleString('fr-FR')} FC`;
-    } else if (otherAmountUSD > 0) {
-      return `${otherAmountUSD.toLocaleString('fr-FR')} $`;
-    } else {
-      return '0 $';
-    }
-  };
+  const formatTotalRevenue = () => formatSplit({
+    fc: Object.values(revenueByTypeCurrency).reduce((sum, part) => sum + part.fc, 0),
+    usd: Object.values(revenueByTypeCurrency).reduce((sum, part) => sum + part.usd, 0)
+  });
 
-  const formatPending = () => {
-    const consultationAmountFC = pendingByType.consultation || 0;
-    const otherAmountUSD = (pendingByType.exam || 0) +
-      (pendingByType.medication || 0) +
-      (pendingByType.hospitalization || 0) +
-      (pendingByType.act || 0);
-    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
-      return `${consultationAmountFC.toLocaleString('fr-FR')} FC + ${otherAmountUSD.toLocaleString('fr-FR')} $`;
-    }
-    if (consultationAmountFC > 0) return `${consultationAmountFC.toLocaleString('fr-FR')} FC`;
-    if (otherAmountUSD > 0) return `${otherAmountUSD.toLocaleString('fr-FR')} $`;
-    return '0 $';
-  };
+  const formatTypeAmount = (split: { fc: number; usd: number }) => formatSplit(split);
 
   return (
     <div>
@@ -166,11 +144,11 @@ const PDGOverview: React.FC = () => {
                 <div className="text-sm font-medium text-gray-500 truncate">Entrées (reçus)</div>
                 <div className="text-lg font-medium text-gray-900">{formatTotalRevenue()}</div>
                 <div className="mt-2 text-xs text-gray-500">
-                  <div>Consultations : <span className="font-semibold text-gray-700">{revenueByType.consultation.toLocaleString('fr-FR')} FC</span></div>
-                  <div>Examens : <span className="font-semibold text-gray-700">{revenueByType.exam.toLocaleString('fr-FR')} $</span></div>
-                  <div>Actes : <span className="font-semibold text-gray-700">{revenueByType.act.toLocaleString('fr-FR')} $</span></div>
-                  <div>Médicaments : <span className="font-semibold text-gray-700">{revenueByType.medication.toLocaleString('fr-FR')} $</span></div>
-                  <div>Hospitalisations : <span className="font-semibold text-gray-700">{revenueByType.hospitalization.toLocaleString('fr-FR')} $</span></div>
+                  <div>Consultations : <span className="font-semibold text-gray-700">{formatTypeAmount(revenueByTypeCurrency.consultation)}</span></div>
+                  <div>Examens : <span className="font-semibold text-gray-700">{formatTypeAmount(revenueByTypeCurrency.exam)}</span></div>
+                  <div>Actes : <span className="font-semibold text-gray-700">{formatTypeAmount(revenueByTypeCurrency.act)}</span></div>
+                  <div>Médicaments : <span className="font-semibold text-gray-700">{formatTypeAmount(revenueByTypeCurrency.medication)}</span></div>
+                  <div>Hospitalisations : <span className="font-semibold text-gray-700">{formatTypeAmount(revenueByTypeCurrency.hospitalization)}</span></div>
                 </div>
               </div>
             </div>
@@ -183,7 +161,7 @@ const PDGOverview: React.FC = () => {
               <div>
                 <div className="text-sm font-medium text-gray-500 truncate">Factures en attente</div>
                 <div className="text-lg font-medium text-gray-900">{pendingInvoiceCount}</div>
-                <div className="mt-1 text-xs text-gray-500">{formatPending()}</div>
+                <div className="mt-1 text-xs text-gray-500">{formatSplit(pendingCurrency)}</div>
               </div>
             </div>
           </div>

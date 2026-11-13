@@ -38,13 +38,22 @@ export function isInPeriod(value: string | Date | null | undefined, from: Date, 
   return !Number.isNaN(date.getTime()) && date >= from && date <= to;
 }
 
+export function currencyOfItemType(type: string | null | undefined): 'FC' | '$' {
+  const raw = type || '';
+  const [base, currency] = raw.split(':');
+  if (currency === 'FC' || currency === '$') return currency;
+  return base === 'consultation' ? 'FC' : '$';
+}
+
+export function formatMoney(amount: number, currency: 'FC' | '$'): string {
+  const value = amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+  return currency === 'FC' ? `${value} FC` : `${value} $`;
+}
+
 export function addInvoiceMoney(totals: CurrencyTotals, invoice: { items?: Array<{ type?: string; totalPrice?: number }> }) {
   for (const item of invoice.items || []) {
-    const raw = String(item.type || '');
-    const [base, currency] = raw.split(':');
-    const money = currency || (base === 'consultation' ? 'FC' : '$');
     const amount = Number(item.totalPrice) || 0;
-    if (money === 'FC') totals.fc += amount;
+    if (currencyOfItemType(item.type) === 'FC') totals.fc += amount;
     else totals.usd += amount;
   }
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../utils/apiClient';
 import CashPeriodSummary from '../../components/CashPeriodSummary';
+import { currencyOfItemType, formatMoney, formatTotals } from '../../utils/cashPeriods';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -51,10 +52,8 @@ const FinancialDashboard: React.FC = () => {
       const year = now.getFullYear();
       const getMonth = (date: string) => new Date(date).getMonth();
       
-      // Entrées par type
-      const types = ['consultation', 'exam', 'medication', 'hospitalization', 'act'];
-      const incomeByType: Record<string, number[]> = {};
-      types.forEach(type => { incomeByType[type] = Array(12).fill(0); });
+      const incomeFc = Array(12).fill(0);
+      const incomeUsd = Array(12).fill(0);
       
       const receiptInvoices = invoices.filter((i: any) => i.status === 'paid');
       const pendingInvoices = invoices.filter((i: any) => i.status === 'pending');
@@ -87,18 +86,14 @@ const FinancialDashboard: React.FC = () => {
               description: item.description
             });
             
-            // Extraire le type de base (peut être au format "type:currency")
-            const itemType = item.type || '';
-            const baseType = itemType.includes(':') ? itemType.split(':')[0] : itemType;
-            
-            if (types.includes(baseType)) {
-              incomeByType[baseType][m] += item.totalPrice || 0;
-            }
+            const price = item.totalPrice || 0;
+            if (currencyOfItemType(item.type) === 'FC') incomeFc[m] += price;
+            else incomeUsd[m] += price;
           });
         }
       });
       
-      console.log('[FINANCIAL] Revenus par type calculés:', incomeByType);
+      console.log('[FINANCIAL] Revenus par devise calculés:', { incomeFc, incomeUsd });
       
       // Sorties (approvisionnements approuvés)
       const expenses = Array(12).fill(0);
@@ -115,29 +110,14 @@ const FinancialDashboard: React.FC = () => {
         labels: months,
         datasets: [
           {
-            label: 'Consultations',
-            data: incomeByType['consultation'],
-            backgroundColor: '#3b82f6',
+            label: 'Entrées (FC)',
+            data: incomeFc,
+            backgroundColor: '#0F6CBD',
           },
           {
-            label: 'Examens',
-            data: incomeByType['exam'],
-            backgroundColor: '#f59e42',
-          },
-          {
-            label: 'Médicaments',
-            data: incomeByType['medication'],
-            backgroundColor: '#10b981',
-          },
-          {
-            label: 'Hospitalisations',
-            data: incomeByType['hospitalization'],
-            backgroundColor: '#a855f7',
-          },
-          {
-            label: 'Actes',
-            data: incomeByType['act'],
-            backgroundColor: '#ef4444',
+            label: 'Entrées ($)',
+            data: incomeUsd,
+            backgroundColor: '#107C10',
           },
         ]
       });
@@ -161,6 +141,7 @@ const FinancialDashboard: React.FC = () => {
               date: entryDate(i),
               invoiceNumber: i.invoiceNumber,
               type: baseTypeOf(item.type),
+              currency: currencyOfItemType(item.type),
               description: item.description,
               patient: i.patient?.firstName ? `${i.patient.firstName} ${i.patient.lastName}` : '',
               amount: item.totalPrice || 0
@@ -174,9 +155,7 @@ const FinancialDashboard: React.FC = () => {
         let amountFC = 0;
         let amountUSD = 0;
         (invoice.items || []).forEach((item: any) => {
-          const currency = (item.type || '').includes(':')
-            ? item.type.split(':')[1]
-            : (baseTypeOf(item.type) === 'consultation' ? 'FC' : '$');
+          const currency = currencyOfItemType(item.type);
           if (currency === 'FC') amountFC += item.totalPrice || 0;
           else amountUSD += item.totalPrice || 0;
         });
@@ -223,44 +202,15 @@ const FinancialDashboard: React.FC = () => {
   }, []);
 
   // Fonction pour formater le montant selon le type
-  const formatAmount = (amount: number, type: string) => {
-    const baseType = (type || '').split(':')[0];
-    if (baseType === 'consultation') {
-      return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC`;
-    } else {
-      return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
-    }
-  };
-
-  // Fonction pour calculer le total séparé par devise
-  const calculateTotalByCurrency = () => {
-    let consultationAmountFC = 0;
-    let otherAmountUSD = 0;
-
-    incomeDetails.forEach(row => {
-      const baseType = (row.type || '').split(':')[0];
-      if (baseType === 'consultation') {
-        consultationAmountFC += row.amount;
-      } else {
-        otherAmountUSD += row.amount;
-      }
-    });
-
-    return { consultationAmountFC, otherAmountUSD };
-  };
+  const formatAmount = (amount: number, currency: 'FC' | '$') => formatMoney(amount, currency);
 
   const formatTotalRevenue = () => {
-    const { consultationAmountFC, otherAmountUSD } = calculateTotalByCurrency();
-    
-    if (consultationAmountFC > 0 && otherAmountUSD > 0) {
-      return `${consultationAmountFC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC + ${otherAmountUSD.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
-    } else if (consultationAmountFC > 0) {
-      return `${consultationAmountFC.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} FC`;
-    } else if (otherAmountUSD > 0) {
-      return `${otherAmountUSD.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} $`;
-    } else {
-      return '0 $';
-    }
+    const totals = { fc: 0, usd: 0 };
+    incomeDetails.forEach(row => {
+      if (row.currency === 'FC') totals.fc += row.amount;
+      else totals.usd += row.amount;
+    });
+    return formatTotals(totals);
   };
 
   return (
@@ -324,7 +274,7 @@ const FinancialDashboard: React.FC = () => {
                       <td className="p-2 capitalize">{row.type}</td>
                       <td className="p-2">{row.description}</td>
                       <td className="p-2">{row.patient}</td>
-                      <td className="p-2">{formatAmount(row.amount, row.type)}</td>
+                      <td className="p-2">{formatAmount(row.amount, row.currency)}</td>
                     </tr>
                   ))}
                   <tr className="font-bold bg-gray-50">
