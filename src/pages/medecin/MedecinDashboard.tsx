@@ -4,6 +4,7 @@ import { GlobalErrorBoundary } from '../../components/GlobalErrorBoundary';
 import { Routes, Route } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import Settings from '../admin/Settings';
+import { matchesPatientQuery, patientYears } from '../../utils/patientSearch';
 
 interface Patient {
   id: number;
@@ -170,6 +171,7 @@ function PatientsDossiers() {
 
   // États pour la recherche et filtres
   const [searchTerm, setSearchTerm] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
 
   // Fonction helper pour récupérer le nom du type de consultation
   const getSelectedConsultationTypeName = () => {
@@ -268,14 +270,8 @@ function PatientsDossiers() {
   };
 
   // Filtrer les patients selon les critères
-  const filteredPatients = patients.filter(patient => {
-    const matchesSearch = 
-      patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.folderNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
+  const years = patientYears(patients);
+  const filteredPatients = patients.filter((patient) => matchesPatientQuery(patient, searchTerm, yearFilter));
 
   // Charger la liste des patients au montage
   useEffect(() => {
@@ -589,14 +585,25 @@ function PatientsDossiers() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Rechercher par nom, prénom ou dossier..."
+                placeholder="Nom, prénom ou numéro de dossier"
                 className="input-field flex-1"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              <select
+                className="input-field w-28 bg-white"
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                aria-label="Année"
+              >
+                <option value="">Années</option>
+                {years.map((year) => (
+                  <option key={year} value={String(year)}>{year}</option>
+                ))}
+              </select>
               
               <button
-                onClick={() => setSearchTerm('')}
+                onClick={() => { setSearchTerm(''); setYearFilter(''); }}
                 className="btn-secondary px-3"
                 title="Réinitialiser la recherche"
               >
@@ -607,7 +614,7 @@ function PatientsDossiers() {
             </div>
             
             {/* Indicateur de résultats */}
-            {searchTerm && (
+            {(searchTerm || yearFilter) && (
               <div className="text-sm text-gray-600">
                 {filteredPatients.length} patient(s) trouvé(s)
                 {patients.length !== filteredPatients.length && ` sur ${patients.length} total`}
@@ -621,7 +628,7 @@ function PatientsDossiers() {
               <div className="p-4 text-center text-gray-500">Chargement...</div>
             ) : filteredPatients.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
-                {searchTerm ? 'Aucun patient trouvé' : 'Aucun patient enregistré'}
+                {searchTerm || yearFilter ? 'Aucun patient trouvé' : 'Aucun patient enregistré'}
               </div>
             ) : (
               filteredPatients.map(patient => (

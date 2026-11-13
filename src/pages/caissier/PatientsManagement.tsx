@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../utils/apiClient';
+import { matchesPatientQuery, patientYears } from '../../utils/patientSearch';
 
-function generateFolderNumber(currentYear: number, lastNumber: number) {
-  return `${currentYear}-${String(lastNumber + 1).padStart(3, '0')}`;
+function generateFolderNumber(currentYear: number, patients: { folderNumber?: string }[]) {
+  const yearText = String(currentYear);
+  const series = patients.filter((patient) => (patient.folderNumber || '').startsWith(yearText));
+  let highest = 0;
+  const annual = new RegExp(`^${currentYear}-(\\d+)$`);
+  for (const patient of series) {
+    const match = (patient.folderNumber || '').match(annual);
+    if (match) highest = Math.max(highest, parseInt(match[1], 10));
+  }
+  return `${currentYear}-${String(Math.max(highest, series.length) + 1).padStart(3, '0')}`;
 }
 
 function calculateAge(dateNaissance: string) {
@@ -47,8 +56,8 @@ const PatientsManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [lastFolderNumber, setLastFolderNumber] = useState(0); // Pour affichage local
   const [search, setSearch] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
   const currentYear = new Date().getFullYear();
   const [editForm, setEditForm] = useState<{
     id: number;
@@ -93,14 +102,6 @@ const PatientsManagement: React.FC = () => {
       
       console.log('✅ Patients chargés:', patientsData.length, 'patients');
       setPatients(patientsData);
-      
-      // Pour la génération locale du numéro de dossier (affichage uniquement)
-      if (patientsData.length > 0) {
-        const last = patientsData[0].folderNumber;
-          if (last && last.startsWith(`${currentYear}-`)) {
-            setLastFolderNumber(parseInt(last.split('-')[1], 10));
-          }
-        }
     } catch (e: any) {
       console.error('❌ Erreur chargement patients:', e);
       setError(e.response?.data?.error || e.message || 'Erreur lors du chargement des patients');
@@ -119,7 +120,7 @@ const PatientsManagement: React.FC = () => {
       poids: '',
       adresse: '',
       telephone: '',
-      numeroDossier: generateFolderNumber(currentYear, lastFolderNumber),
+      numeroDossier: generateFolderNumber(currentYear, patients),
     });
     setShowForm(true);
     setError(null);
@@ -249,10 +250,8 @@ const PatientsManagement: React.FC = () => {
     }
   };
 
-  const filteredPatients = patients.filter(p => {
-    const searchText = `${p.folderNumber} ${p.lastName} ${p.firstName}`.toLowerCase();
-    return searchText.includes(search.toLowerCase());
-  });
+  const years = patientYears(patients);
+  const filteredPatients = patients.filter((patient) => matchesPatientQuery(patient, search, yearFilter));
 
 
   return (
@@ -263,13 +262,33 @@ const PatientsManagement: React.FC = () => {
           + Nouveau patient
         </button>
       </div>
-      <input
-        type="text"
-        className="input-field"
-        placeholder="Rechercher un patient (nom, prénom ou dossier)"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1">
+          <label htmlFor="cashier-patient-search" className="mb-1 block text-sm font-medium text-gray-700">Nom ou numéro de dossier</label>
+          <input
+            id="cashier-patient-search"
+            type="text"
+            className="input-field w-full"
+            placeholder="Nom, prénom ou numéro de dossier"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="sm:w-44">
+          <label htmlFor="cashier-patient-year" className="mb-1 block text-sm font-medium text-gray-700">Année</label>
+          <select
+            id="cashier-patient-year"
+            className="input-field w-full bg-white"
+            value={yearFilter}
+            onChange={e => setYearFilter(e.target.value)}
+          >
+            <option value="">Toutes les années</option>
+            {years.map((year) => (
+              <option key={year} value={String(year)}>{year}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       <p className="text-gray-600 mb-6">Ajoutez, modifiez ou consultez les informations des patients.</p>
       {error && <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4 text-red-700">{error}</div>}
       {success && <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 text-green-700">{success}</div>}
@@ -277,7 +296,7 @@ const PatientsManagement: React.FC = () => {
         {loading ? (
           <div className="flex items-center justify-center h-24">Chargement...</div>
         ) : filteredPatients.length === 0 ? (
-          <div className="text-gray-500">Aucun patient enregistré.</div>
+          <div className="text-gray-500">{search || yearFilter ? 'Aucun patient ne correspond à cette recherche.' : 'Aucun patient enregistré.'}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

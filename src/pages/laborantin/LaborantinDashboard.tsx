@@ -3,6 +3,7 @@ import { apiClient } from '../../utils/apiClient';
 import { GlobalErrorBoundary } from '../../components/GlobalErrorBoundary';
 import { Routes, Route } from 'react-router-dom';
 import Layout from '../../components/Layout';
+import { matchesPatientQuery, patientYears } from '../../utils/patientSearch';
 
 // Styles CSS pour les composants
 const styles = {
@@ -246,15 +247,9 @@ function PatientsExamens({
     return false;
   };
 
-  // Filtrer les patients selon le terme de recherche
-  const filteredPatients = patients.filter(patient => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      patient.lastName?.toLowerCase().includes(searchLower) ||
-      patient.firstName?.toLowerCase().includes(searchLower) ||
-      patient.folderNumber?.toLowerCase().includes(searchLower)
-    );
-  });
+  const [yearFilter, setYearFilter] = useState('');
+  const years = patientYears(patients);
+  const filteredPatients = patients.filter((patient) => matchesPatientQuery(patient, searchTerm, yearFilter));
 
   return (
     <div className="p-6">
@@ -298,14 +293,25 @@ function PatientsExamens({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Rechercher par nom, prénom ou dossier..."
+                placeholder="Nom, prénom ou numéro de dossier"
                 className={styles.inputField}
                 value={searchTerm}
                 onChange={(e) => onSearchTermChange(e.target.value)}
               />
+              <select
+                className="w-28 shrink-0 border border-gray-300 rounded-md bg-white px-2 py-2 text-sm"
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                aria-label="Année"
+              >
+                <option value="">Années</option>
+                {years.map((year) => (
+                  <option key={year} value={String(year)}>{year}</option>
+                ))}
+              </select>
               
               <button
-                onClick={() => onSearchTermChange('')}
+                onClick={() => { onSearchTermChange(''); setYearFilter(''); }}
                 className={`${styles.btnSecondary} px-3`}
                 title="Réinitialiser la recherche"
               >
@@ -316,7 +322,7 @@ function PatientsExamens({
             </div>
             
             {/* Indicateur de résultats */}
-            {searchTerm && (
+            {(searchTerm || yearFilter) && (
               <div className="text-sm text-gray-600">
                 {filteredPatients.length} patient(s) trouvé(s)
                 {patients.length !== filteredPatients.length && ` sur ${patients.length} total`}
@@ -330,7 +336,7 @@ function PatientsExamens({
               <div className="p-4 text-center text-gray-500">Chargement...</div>
             ) : filteredPatients.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
-                {searchTerm ? 'Aucun patient trouvé' : 'Aucun patient avec examens programmés'}
+                {searchTerm || yearFilter ? 'Aucun patient trouvé' : 'Aucun patient avec examens programmés'}
               </div>
             ) : (
               filteredPatients.map(patient => (
